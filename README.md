@@ -147,8 +147,7 @@ The AnnData object provides the following properties and methods:
 
 #### Methods
 
-- `close()` - Close the HDF5 file handle
-- `isClosed()` - Check if the AnnData object has been closed
+- `close()` - Close the HDF5 file handle (inherited from HdfFile)
 
 ### DataFrame Object
 

@@ -10,12 +10,8 @@ import java.util.stream.Collectors;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
-import java.lang.ref.Cleaner;
 
-public class AnnData extends HdfFile implements AutoCloseable {
-    private static final Cleaner CLEANER = Cleaner.create();
-    private final Cleaner.Cleanable cleanable;
-    private volatile boolean closed = false;
+public class AnnData extends HdfFile {
     final DataFrame obs;
     final DataFrame var;
 
@@ -72,33 +68,6 @@ public class AnnData extends HdfFile implements AutoCloseable {
                 "obs", new HashSet<>(Arrays.asList(this.obs.colnames)),
                 "var", new HashSet<>(Arrays.asList(this.var.colnames))
             );
-
-        // Register automatic cleanup when object is garbage collected
-        this.cleanable = CLEANER.register(this, new ResourceCleanup(this));
-    }
-
-    /**
-     * Cleanup action that will be called when the AnnData object is garbage collected.
-     * This ensures the HDF5 file is closed even if the user forgets to call close().
-     */
-    private static class ResourceCleanup implements Runnable {
-        private final AnnData annData;
-
-        ResourceCleanup(AnnData annData) {
-            // Store a reference to AnnData to check closed flag
-            this.annData = annData;
-        }
-
-        @Override
-        public void run() {
-            // Only close if not already closed (to avoid double-closing)
-            // This check is safe because closed is volatile
-            if (!annData.closed) {
-                // Use the internal doClose() method to close the HdfFile
-                // without going through AnnData.close() to avoid recursion
-                annData.doClose();
-            }
-        }
     }
 
     private Set<String> getFields() {
@@ -108,40 +77,6 @@ public class AnnData extends HdfFile implements AutoCloseable {
     private Set<String> getFields(String name) {
         GroupImpl group = (GroupImpl) this.getChild(name);
         return group.getChildren().keySet();
-    }
-
-    /**
-     * Internal method to actually close the HDF5 file.
-     * This is called by both explicit close() and automatic cleanup.
-     */
-    private void doClose() {
-        super.close();
-    }
-
-    /**
-     * Closes the HDF5 file handle.
-     * This method can be called explicitly, or the file will be automatically
-     * closed when the object is garbage collected.
-     */
-    @Override
-    public void close() {
-        if (!closed) {
-            closed = true;
-            // Unregister from cleaner to prevent automatic cleanup from running
-            if (cleanable != null) {
-                cleanable.clean();
-            }
-            doClose();
-        }
-    }
-
-    /**
-     * Checks if the AnnData object has been closed.
-     * 
-     * @return true if the object has been closed, false otherwise
-     */
-    public boolean isClosed() {
-        return closed;
     }
 
     @Override
