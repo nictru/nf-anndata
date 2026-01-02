@@ -4,7 +4,7 @@ workflow {
     // Example: Load an AnnData file and access its properties
     // This example demonstrates the plugin functionality using the test data file
     
-    def testFile = file('src/test/data/pbmc3k_processed.h5ad')
+    def testFile = file('src/test/data/pbmc3k_processed.h5ad', checkIfExists: true)
     
     Channel.of(testFile)
         .map { file ->
