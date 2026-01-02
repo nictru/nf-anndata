@@ -96,11 +96,5 @@ public class AnnData extends HdfFile {
 
         return sb.toString();
     }
-
-    public static void main(String[] args) {
-        AnnData annData = new AnnData(Path.of("tests/pbmc3k_processed.h5ad"));
-        System.out.println(annData);
-        annData.close();
-    }
 }
 
