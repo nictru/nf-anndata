@@ -68,8 +68,8 @@ workflow {
     println "obsm: ${ad.obsm.join(', ')}"
     println "varm: ${ad.varm.join(', ')}"
     
-    // Close the file when done
-    ad.close()
+    // Note: The file is automatically closed when the object is garbage collected.
+    // You can optionally call close() for immediate resource cleanup.
 }
 ```
 
@@ -95,7 +95,7 @@ workflow {
     def data = column.data
     println "First 5 values: ${data.take(5).join(', ')}"
     
-    ad.close()
+    // The file is automatically closed when the object is garbage collected
 }
 ```
 
@@ -114,7 +114,7 @@ workflow {
                 n_vars: ad.n_vars,
                 obs_cols: ad.obs.colnames.join(', ')
             ]
-            ad.close()
+            // The file is automatically closed when the object is garbage collected
             return result
         }
         .view()
@@ -133,8 +133,7 @@ workflow {
     def ad = anndata(filePath)
     
     // Use the AnnData object...
-    
-    ad.close()
+    // The file is automatically closed when the object is garbage collected
 }
 ```
 
@@ -170,7 +169,8 @@ The AnnData object provides the following properties and methods:
 
 #### Methods
 
-- `close()` - Close the HDF5 file handle
+- `close()` - Close the HDF5 file handle (optional - automatic cleanup on garbage collection)
+- `isClosed()` - Check if the AnnData object has been closed
 
 ### DataFrame Object
 
