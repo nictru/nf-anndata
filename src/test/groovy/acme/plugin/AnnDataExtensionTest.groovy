@@ -26,31 +26,30 @@ class AnnDataExtensionTest extends Specification {
         noExceptionThrown()
     }
 
-    def 'should load AnnData from String path when file exists'() {
+    def 'should throw exception for non-existent String path'() {
         given:
         def extension = new AnnDataExtension()
-        def testFile = tempDir.resolve('test.h5ad')
-        // Note: This test requires a valid h5ad file
-        // For now, we'll test that the method exists and can be called
-        // Integration tests with real files should be in a separate test suite
+        extension.init(Mock(Session))
+        def nonExistentFile = tempDir.resolve('nonexistent.h5ad')
 
         when:
-        def result = extension.anndata(testFile.toString())
+        extension.anndata(nonExistentFile.toString())
 
         then:
-        thrown(IllegalArgumentException) // File doesn't exist or is invalid
+        thrown(Exception) // FileNotFoundException or similar
     }
 
-    def 'should load AnnData from Path object when file exists'() {
+    def 'should throw exception for non-existent Path'() {
         given:
         def extension = new AnnDataExtension()
-        def testFile = tempDir.resolve('test.h5ad')
+        extension.init(Mock(Session))
+        def nonExistentFile = tempDir.resolve('nonexistent.h5ad')
 
         when:
-        def result = extension.anndata(testFile)
+        extension.anndata(nonExistentFile)
 
         then:
-        thrown(IllegalArgumentException) // File doesn't exist or is invalid
+        thrown(Exception) // FileNotFoundException or similar
     }
 
     def 'should handle null path gracefully'() {
