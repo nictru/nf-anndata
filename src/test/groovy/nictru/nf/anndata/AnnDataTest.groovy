@@ -1,15 +1,11 @@
 package nictru.nf.anndata
 
 import java.nio.file.Path
-import java.nio.file.Paths
 import spock.lang.Specification
 import spock.lang.TempDir
 
 /**
- * Unit tests for AnnData class
- * 
- * Note: These tests require a valid h5ad file. For integration tests,
- * use the test file from src/test/data/pbmc3k_processed.h5ad
+ * Unit tests for AnnData class error handling
  */
 class AnnDataTest extends Specification {
 
@@ -37,27 +33,6 @@ class AnnDataTest extends Specification {
 
         then:
         thrown(Exception) // Should fail to parse as HDF5
-    }
-
-    def 'should throw exception for h5ad file missing required fields'() {
-        // This test would require creating a minimal invalid h5ad file
-        // For now, we document the expected behavior
-        expect:
-        true // Placeholder - would need actual h5ad file manipulation
-    }
-
-    def 'should close file handle'() {
-        given:
-        def testFile = tempDir.resolve('test.h5ad')
-        // This test would require a valid h5ad file
-        // For now, we test the close method exists
-
-        when:
-        // Would need: def ad = new AnnData(testFile)
-        // ad.close()
-
-        then:
-        true // Placeholder - would need actual file
     }
 }
 

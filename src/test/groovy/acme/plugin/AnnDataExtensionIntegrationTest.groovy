@@ -1,10 +1,9 @@
 package acme.plugin
 
 import java.nio.file.Path
-import java.nio.file.Paths
 import nextflow.Session
 import nictru.nf.anndata.AnnData
-import spock.lang.Specification
+import nictru.nf.anndata.AnnDataTestBase
 
 /**
  * Integration tests for AnnDataExtension using real h5ad files
@@ -12,14 +11,7 @@ import spock.lang.Specification
  * These tests require the test h5ad file from src/test/data/pbmc3k_processed.h5ad
  * Tests will fail if the file is not available
  */
-class AnnDataExtensionIntegrationTest extends Specification {
-
-    def setup() {
-        def testFile = Paths.get('src/test/data/pbmc3k_processed.h5ad')
-        if (!testFile.toFile().exists()) {
-            throw new FileNotFoundException("Test file not found: ${testFile.toAbsolutePath()}. Tests require src/test/data/pbmc3k_processed.h5ad")
-        }
-    }
+class AnnDataExtensionIntegrationTest extends AnnDataTestBase {
 
     def 'should load AnnData from String path'() {
         given:
@@ -77,10 +69,6 @@ class AnnDataExtensionIntegrationTest extends Specification {
         cleanup:
         ad1?.close()
         ad2?.close()
-    }
-
-    private Path findTestFile() {
-        return Paths.get('src/test/data/pbmc3k_processed.h5ad')
     }
 }
 
