@@ -11,7 +11,7 @@ dependencies {
 nextflowPlugin {
     nextflowVersion = '24.10.0'
 
-    provider = 'nictru'
+    provider = 'Nico Trummer'
     className = 'acme.plugin.AnnDataPlugin'
     extensionPoints = [
         'acme.plugin.AnnDataExtension'
