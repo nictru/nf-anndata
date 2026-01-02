@@ -15,13 +15,23 @@ Nextflow plugin for reading and accessing properties from AnnData (.h5ad) files.
 
 ## Installation
 
-### From Nextflow Plugin Registry
+From Nextflow Plugin Registry
 
 ```bash
 nextflow plugin install nf-anndata
 ```
 
-### From Source
+alternatively, you can reference the plugin in the pipeline config:
+
+```
+plugins {
+    id 'nf-anndata'
+}
+```
+
+<details>
+<summary>From Source</summary>
+
 
 1. Clone this repository:
 ```bash
@@ -39,6 +49,8 @@ make assemble
 make install
 ```
 
+</details>
+
 ## Usage
 
 ### Basic Usage
@@ -49,91 +61,57 @@ Import the `anndata` function in your Nextflow script:
 include { anndata } from 'plugin/nf-anndata'
 
 workflow {
-    // Load an AnnData file
-    def ad = anndata('path/to/your/file.h5ad')
-    
-    // Access dimensions
-    println "Dimensions: ${ad.n_obs} × ${ad.n_vars}"
-    
-    // Access obs dataframe
-    println "Obs columns: ${ad.obs.colnames.join(', ')}"
-    println "Obs row names: ${ad.obs.rownames.join(', ')}"
-    
-    // Access var dataframe
-    println "Var columns: ${ad.var.colnames.join(', ')}"
-    println "Var row names: ${ad.var.rownames.join(', ')}"
-    
-    // Access available fields
-    println "Layers: ${ad.layers.join(', ')}"
-    println "obsm: ${ad.obsm.join(', ')}"
-    println "varm: ${ad.varm.join(', ')}"
-    
-    // Note: The file is automatically closed when the object is garbage collected.
-    // You can optionally call close() for immediate resource cleanup.
-}
-```
+    // Load an AnnData from a file
+    def testFile = file('path/to/your/anndata/file.h5ad', checkIfExists: true)
+    ch_adata = channel.of(testFile).map { file -> anndata(file) }
 
-### Working with Columns
+    // Alternatively, you can also load from a string
+    ch_adata = channel.of(anndata('path/to/your.h5ad'))
 
-```nextflow
-include { anndata } from 'plugin/nf-anndata'
-
-workflow {
-    def ad = anndata('path/to/your/file.h5ad')
-    
-    // Get a column from obs
-    def column = ad.obs.get('louvain')
-    
-    // Get unique values
-    def uniqueValues = column.unique
-    println "Unique values: ${uniqueValues.join(', ')}"
-    
-    // Get number of unique values
-    println "Number of unique values: ${column.n_unique()}"
-    
-    // Access raw data
-    def data = column.data
-    println "First 5 values: ${data.take(5).join(', ')}"
-    
-    // The file is automatically closed when the object is garbage collected
-}
-```
-
-### Using with Channels
-
-```nextflow
-include { anndata } from 'plugin/nf-anndata'
-
-workflow {
-    Channel.fromPath('*.h5ad')
-        .map { file ->
-            def ad = anndata(file.toString())
-            def result = [
-                file: file,
-                n_obs: ad.n_obs,
-                n_vars: ad.n_vars,
-                obs_cols: ad.obs.colnames.join(', ')
-            ]
-            // The file is automatically closed when the object is garbage collected
-            return result
+    ch_adata.map { ad ->
+            println "n_obs: ${ad.n_obs}"
+            println "n_var: ${ad.n_var}"
         }
-        .view()
 }
 ```
 
-### Using with Path Objects
+### Working with fields in layers, obsm, varm, obsp, varp, uns
 
-The `anndata` function also accepts `Path` objects:
+```
+// Keep only objects that have a layer called 'counts'
+ch_adata_with_counts = ch_adata.filter { ad ->
+    ad.layers.contains('counts')
+}
+
+// Branch based on presence of 'X_pca' in obsm
+ch_has_pca = ch_adata.branch { ad ->
+    yes: ad.obsm.contains('X_pca')
+    no: true
+}
+```
+
+### Working with obs/var columns
 
 ```nextflow
-include { anndata } from 'plugin/nf-anndata'
+// Fail if the 'batch' column is missing
+ch_adata.map { ad ->
+    if (!ad.obs.columns) {
+        error 'Column \'batch\' is missing'
+    }
+}
 
-workflow {
-    def filePath = file('path/to/your/file.h5ad')
-    def ad = anndata(filePath)
-    
-    // Use the AnnData object...
-    // The file is automatically closed when the object is garbage collected
+// Fail if there is not more than one unique value in the 'louvain' column
+ch_adata.map { ad ->
+    if (ad.obs.get('louvain').n_unique() < 2) {
+        error 'Column \'louvain\' has less than 2 unique values'
+    }
+}
+
+// Fail if a certain value does not exist in a column
+ch_adata.map { ad ->
+    if (!ad.obs.get('louvain').unique.contains('Dendritic cells')) {
+        error 'Column \'louvain\' is missing Dendritic cells'
+    }
 }
 ```
 
@@ -169,7 +147,7 @@ The AnnData object provides the following properties and methods:
 
 #### Methods
 
-- `close()` - Close the HDF5 file handle (optional - automatic cleanup on garbage collection)
+- `close()` - Close the HDF5 file handle
 - `isClosed()` - Check if the AnnData object has been closed
 
 ### DataFrame Object

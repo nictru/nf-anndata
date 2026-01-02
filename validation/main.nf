@@ -1,68 +1,60 @@
 include { anndata } from 'plugin/nf-anndata'
 
 workflow {
-    // Example: Load an AnnData file and access its properties
-    // This example demonstrates the plugin functionality using the test data file
-
     def testFile = file('src/test/data/pbmc3k_processed.h5ad', checkIfExists: true)
-
     ch_adata = Channel.of(testFile).map { file -> anndata(file) }
 
-    ch_adata.view()
+    // One map per print statement
+    ch_adata.map { ad -> println "n_obs: ${ad.n_obs}" }
 
-    // Show all the main properties of the AnnData object individually
-    ch_adata.map { ad -> ad.n_obs }
-        .map { n_obs ->
-            println "n_obs: ${n_obs}"
+    ch_adata.map { ad -> println "n_vars: ${ad.n_vars}" }
+
+    ch_adata.map { ad -> println "layers: ${ad.layers}" }
+
+    ch_adata.map { ad -> println "obsm: ${ad.obsm}" }
+
+    ch_adata.map { ad -> println "varm: ${ad.varm}" }
+
+    ch_adata.map { ad -> println "obsp: ${ad.obsp}" }
+
+    ch_adata.map { ad -> println "varp: ${ad.varp}" }
+
+    ch_adata.map { ad -> println "uns: ${ad.uns}" }
+
+    ch_adata.map { ad -> println "has_counts: ${ad.layers.contains('counts')}" }
+
+    ch_adata.map { ad -> println "has_not_a_layer: ${ad.layers.contains('not_a_layer')}" }
+
+    ch_adata.map { ad -> println "obs colnames: ${ad.obs.colnames}" }
+
+    ch_adata.map { ad -> println "obs has louvain column: ${ad.obs.colnames.contains('louvain')}" }
+
+    ch_adata.map { ad -> println "var colnames: ${ad.var.colnames}" }
+
+    ch_adata.map { ad ->
+        if (!ad.obs.colnames.contains('louvain')) {
+            error 'Column \'louvain\' is missing'
+        } else {
+            println "Column \'louvain\' is present"
         }
+    }
 
-    ch_adata.map { ad -> ad.n_vars }
-        .map { n_vars ->
-            println "n_vars: ${n_vars}"
+    ch_adata.map { ad ->
+        if (ad.obs.get('louvain').n_unique() < 2) {
+            error 'Column \'louvain\' has less than 2 unique values'
+        } else {
+            println "Column \'louvain\' has more than 2 unique values"
         }
+    }
 
-    ch_adata.map { ad -> ad.layers }
-        .map { layers ->
-            println "layers: ${layers}"
+    ch_adata.map { ad ->
+        if (!ad.obs.get('louvain').unique.contains('Dendritic cells')) {
+            error 'Column \'louvain\' is missing Dendritic cells'
+        } else {
+            println "Column \'louvain\' has Dendritic cells"
         }
+    }
 
-    ch_adata.map { ad -> ad.obsm }
-        .map { obsm ->
-            println "obsm: ${obsm}"
-        }
-
-    ch_adata.map { ad -> ad.varm }
-        .map { varm ->
-            println "varm: ${varm}"
-        }
-
-    ch_adata.map { ad -> ad.obsp }
-        .map { obsp ->
-            println "obsp: ${obsp}"
-        }
-
-    ch_adata.map { ad -> ad.varp }
-        .map { varp ->
-            println "varp: ${varp}"
-        }
-
-    ch_adata.map { ad -> ad.uns }
-        .map { uns ->
-            println "uns: ${uns}"
-        }
-
-    // Optionally show ad.obs and ad.var -- e.g., show column names
-    ch_adata.map { ad -> ad.obs.colnames }
-        .map { obs_colnames ->
-            println "obs colnames: ${obs_colnames}"
-        }
-
-    ch_adata.map { ad -> ad.var.colnames }
-        .map { var_colnames ->
-            println "var colnames: ${var_colnames}"
-        }
-
-    // Example: Show unique information about the first obs column if available
     ch_adata.map { ad ->
         if (ad.obs.colnames.size() > 0) {
             def firstCol = ad.obs.colnames[0]
