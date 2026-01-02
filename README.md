@@ -77,7 +77,7 @@ workflow {
 
 ### Working with fields in layers, obsm, varm, obsp, varp, uns
 
-```
+```nextflow
 // Keep only objects that have a layer called 'counts'
 ch_adata_with_counts = ch_adata.filter { ad ->
     ad.layers.contains('counts')
