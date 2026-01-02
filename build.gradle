@@ -4,14 +4,17 @@ plugins {
 
 version = '0.1.0'
 
+dependencies {
+    implementation 'io.jhdf:jhdf:0.9.2'
+}
+
 nextflowPlugin {
     nextflowVersion = '24.10.0'
 
-    provider = 'provider-name'
-    className = 'acme.plugin.MyPlugin'
+    provider = 'nictru'
+    className = 'acme.plugin.AnnDataPlugin'
     extensionPoints = [
-        'acme.plugin.MyExtension',
-        'acme.plugin.MyFactory'
+        'acme.plugin.AnnDataExtension'
     ]
 
 }
