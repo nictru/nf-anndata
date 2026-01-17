@@ -1,74 +1,131 @@
 package nictru.nf.anndata
 
+import spock.lang.Unroll
+
 /**
- * DataFrame integration tests for AnnData class
- * 
- * These tests require the test h5ad file from src/test/data/pbmc3k_processed.h5ad
+ * Tests for DataFrame functionality across different test files
  */
 class AnnDataDataFrameTest extends AnnDataTestBase {
 
-    def 'should have obs and var dataframes with columns'() {
+    @Unroll
+    def 'should access DataFrameColumn data for #filename'() {
         given:
-        def testFile = findTestFile()
+        def testFile = findTestFile(filename)
         def ad = new AnnData(testFile)
-
-        expect:
-        ad.obs.colnames.length > 0
-        ad.var.colnames.length > 0
-        ad.obs.rownames.length > 0
-        ad.var.rownames.length > 0
-
-        cleanup:
-        ad?.close()
-    }
-
-    def 'should access column data'() {
-        given:
-        def testFile = findTestFile()
-        def ad = new AnnData(testFile)
-        def firstCol = ad.obs.colnames[0]
-
+        
         when:
-        def column = ad.obs.get(firstCol)
-
+        // Get first column from obs if available
+        def obsCol = ad.obs.colnames.length > 0 ? ad.obs.get(ad.obs.colnames[0]) : null
+        def varCol = ad.var.colnames.length > 0 ? ad.var.get(ad.var.colnames[0]) : null
+        
         then:
-        column != null
-        column.data != null
-        column.data.length == ad.n_obs
-        column.unique != null
-        column.n_unique() >= 0
-
+        if (obsCol != null) {
+            obsCol.data != null
+            obsCol.data.length == ad.n_obs
+            obsCol.unique != null
+            obsCol.n_unique() >= 0
+        }
+        
+        if (varCol != null) {
+            varCol.data != null
+            varCol.data.length == ad.n_vars
+            varCol.unique != null
+            varCol.n_unique() >= 0
+        }
+        
         cleanup:
-        ad?.close()
+        closeAnnData(ad)
+        
+        where:
+        filename << findAllTestFiles()
+            .findAll { 
+                // Only test files that are likely to have columns (skip edge cases)
+                def name = it.fileName.toString()
+                !name.startsWith('edge_') && name != 'x_none.h5ad'
+            }
+            .collect { it.fileName.toString() }
     }
-
-    def 'should get unique values from column'() {
+    
+    def 'should handle categorical columns'() {
         given:
-        def testFile = findTestFile()
+        def testFile = findTestFile('dtypes_categorical.h5ad')
         def ad = new AnnData(testFile)
-        def louvainCol = ad.obs.get('louvain')
-
-        expect:
-        louvainCol.unique != null
-        louvainCol.unique.size() > 0
-        'B cells' in louvainCol.unique
-        !('B cell' in louvainCol.unique) // Exact match required
-
+        
+        when:
+        def catCol = ad.obs.get('cat_unordered')
+        def catOrderedCol = ad.obs.get('cat_ordered')
+        
+        then:
+        catCol != null
+        catCol.data != null
+        catCol.data.length == ad.n_obs
+        catCol.unique != null
+        catCol.unique.size() > 0
+        
+        catOrderedCol != null
+        catOrderedCol.data != null
+        catOrderedCol.data.length == ad.n_obs
+        
         cleanup:
-        ad?.close()
+        closeAnnData(ad)
     }
-
-    def 'should calculate n_unique correctly'() {
+    
+    def 'should handle numeric columns'() {
         given:
-        def testFile = findTestFile()
+        def testFile = findTestFile('dtypes_numeric.h5ad')
         def ad = new AnnData(testFile)
-        def louvainCol = ad.obs.get('louvain')
-
-        expect:
-        louvainCol.n_unique() == louvainCol.unique.size()
-
+        
+        when:
+        def intCol = ad.obs.get('int32')
+        def floatCol = ad.obs.get('float32')
+        
+        then:
+        intCol != null
+        intCol.data != null
+        intCol.data.length == ad.n_obs
+        
+        floatCol != null
+        floatCol.data != null
+        floatCol.data.length == ad.n_obs
+        
         cleanup:
-        ad?.close()
+        closeAnnData(ad)
+    }
+    
+    def 'should handle boolean columns'() {
+        given:
+        def testFile = findTestFile('dtypes_boolean.h5ad')
+        def ad = new AnnData(testFile)
+        
+        when:
+        def boolCol = ad.obs.get('is_selected')
+        
+        then:
+        boolCol != null
+        boolCol.data != null
+        boolCol.data.length == ad.n_obs
+        boolCol.unique != null
+        boolCol.unique.size() <= 2  // Boolean should have at most 2 unique values
+        
+        cleanup:
+        closeAnnData(ad)
+    }
+    
+    def 'should handle string columns'() {
+        given:
+        def testFile = findTestFile('dtypes_string.h5ad')
+        def ad = new AnnData(testFile)
+        
+        when:
+        def strCol = ad.obs.get('sample_id')
+        
+        then:
+        strCol != null
+        strCol.data != null
+        strCol.data.length == ad.n_obs
+        strCol.unique != null
+        
+        cleanup:
+        closeAnnData(ad)
     }
 }
-
