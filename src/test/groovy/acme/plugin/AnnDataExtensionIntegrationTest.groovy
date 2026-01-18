@@ -8,7 +8,7 @@ import nictru.nf.anndata.AnnDataTestBase
 /**
  * Integration tests for AnnDataExtension using real h5ad files
  * 
- * These tests require the test h5ad file from src/test/data/pbmc3k_processed.h5ad
+ * These tests require the test h5ad file from src/test/data/test_cases/
  * Tests will fail if the file is not available
  */
 class AnnDataExtensionIntegrationTest extends AnnDataTestBase {
@@ -17,7 +17,7 @@ class AnnDataExtensionIntegrationTest extends AnnDataTestBase {
         given:
         def extension = new AnnDataExtension()
         extension.init(Mock(Session))
-        def testFile = findTestFile()
+        def testFile = findTestFile('full_featured.h5ad')
 
         when:
         def ad = extension.anndata(testFile.toString())
@@ -36,7 +36,7 @@ class AnnDataExtensionIntegrationTest extends AnnDataTestBase {
         given:
         def extension = new AnnDataExtension()
         extension.init(Mock(Session))
-        def testFile = findTestFile()
+        def testFile = findTestFile('full_featured.h5ad')
 
         when:
         def ad = extension.anndata(testFile)
@@ -55,7 +55,7 @@ class AnnDataExtensionIntegrationTest extends AnnDataTestBase {
         given:
         def extension = new AnnDataExtension()
         extension.init(Mock(Session))
-        def testFile = findTestFile()
+        def testFile = findTestFile('full_featured.h5ad')
 
         when:
         def ad1 = extension.anndata(testFile.toString())

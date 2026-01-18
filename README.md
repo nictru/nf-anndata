@@ -8,8 +8,12 @@ Nextflow plugin for reading and accessing properties from AnnData (.h5ad) files.
 - Dataframes (`var` and `obs`)
     - Get column names (`colnames`)
     - Get row names (`rownames`)
-    - Get unique values per column (`unique`)
-    - Get number of unique values per column (`n_unique()`)
+    - Access index with `index` property (similar to pandas)
+        - Get unique index values (`index.unique()`)
+        - Get number of unique index values (`index.n_unique()`)
+        - Check if value exists (`index.contains(value)`)
+    - Get unique values per column (`column.unique()`)
+    - Get number of unique values per column (`column.n_unique()`)
     - Access column data (`get(columnName)`)
 - Get names of available fields in `layers`, `obsm`, `varm`, `obsp`, `varp`, `uns`
 
@@ -109,9 +113,38 @@ ch_adata.map { ad ->
 
 // Fail if a certain value does not exist in a column
 ch_adata.map { ad ->
-    if (!ad.obs.get('louvain').unique.contains('Dendritic cells')) {
+    if (!ad.obs.get('louvain').unique().contains('Dendritic cells')) {
         error 'Column \'louvain\' is missing Dendritic cells'
     }
+}
+```
+
+### Working with DataFrame indices
+
+```nextflow
+// Check if all observation names are unique
+ch_adata.map { ad ->
+    if (ad.obs.index.n_unique() != ad.n_obs) {
+        error 'Observation names are not unique'
+    }
+}
+
+// Get all unique cell IDs
+ch_adata.map { ad ->
+    def uniqueCells = ad.obs.index.unique()
+    println "Found ${uniqueCells.size()} unique cells"
+}
+
+// Verify a specific cell exists in the index
+ch_adata.map { ad ->
+    if (!ad.obs.index.contains('cell_001')) {
+        error 'Expected cell_001 not found'
+    }
+}
+
+// Get the name of the index column
+ch_adata.map { ad ->
+    println "Index column name: ${ad.obs.index.name}"
 }
 ```
 
@@ -156,12 +189,29 @@ The DataFrame object (for `obs` and `var`) provides:
 #### Properties
 
 - `colnames` (String[]) - Column names
-- `rownames` (String[]) - Row names
+- `rownames` (String[]) - Row names (index values)
 - `size` (int) - Number of rows
+- `index` (DataFrameIndex) - Index object for accessing row names
 
 #### Methods
 
 - `get(String columnName)` - Get a column by name, returns `DataFrameColumn`
+
+### DataFrameIndex Object
+
+The DataFrameIndex object (accessed via `obs.index` or `var.index`) provides:
+
+#### Properties
+
+- `values` (String[]) - Array of index values
+- `name` (String) - Name of the index column
+
+#### Methods
+
+- `unique()` (Set<String>) - Get unique values in the index
+- `n_unique()` (int) - Get number of unique values in the index
+- `contains(String value)` (boolean) - Check if a value exists in the index
+- `size()` (int) - Get the number of elements in the index
 
 ### DataFrameColumn Object
 
@@ -170,11 +220,11 @@ The DataFrameColumn object provides:
 #### Properties
 
 - `data` (Object[]) - Array of column values
-- `unique` (Set<Object>) - Set of unique values in the column
 
 #### Methods
 
-- `n_unique()` (int) - Number of unique values in the column
+- `unique()` (Set<Object>) - Get unique values in the column
+- `n_unique()` (int) - Get number of unique values in the column
 
 ## Building
 
