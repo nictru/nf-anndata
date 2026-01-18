@@ -1,4 +1,5 @@
 name: nf-anndata CI
+
 on:
   push:
     branches:
@@ -8,60 +9,17 @@ on:
   pull_request:
     branches:
       - '*'
+
 jobs:
   test:
-    name: Test and build nf-anndata
+    name: Test (Java ${{ matrix.java_version }}, NF ${{ matrix.nextflow_version }})
     if: "!contains(github.event.head_commit.message, '[ci skip]')"
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
     strategy:
       fail-fast: false
       matrix:
-        java_version: [17, 21]
+        java_version: ['17', '21']
         nextflow_version: ['24.10', '25.04']
-
-    steps:
-      - name: Environment
-        run: env | sort
-
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 1
-          submodules: true
-
-      - name: Validate version consistency
-        run: |
-          GRADLE_VERSION=$(grep -oP "version = '\K[^']+" build.gradle)
-          CONFIG_VERSION=$(grep -oP "id 'nf-anndata@\K[^']+" validation/nextflow.config)
-          if [ "$GRADLE_VERSION" != "$CONFIG_VERSION" ]; then
-            echo "Error: build.gradle version ($GRADLE_VERSION) does not match validation/nextflow.config version ($CONFIG_VERSION)"
-            exit 1
-          fi
-          echo "Version consistency check passed: $GRADLE_VERSION"
-
-      - name: Setup Java ${{ matrix.java_version }}
-        uses: actions/setup-java@v4
-        with:
-          java-version: ${{matrix.java_version}}
-          architecture: x64
-          distribution: 'temurin'
-
-      - name: Tests
-        run: make test
-        env:
-          GRADLE_OPTS: '-Dorg.gradle.daemon=false'
-
-      - name: Setup Nextflow ${{ matrix.nextflow_version }}
-        uses: nf-core/setup-nextflow@v2
-        with:
-          version: "${{ matrix.nextflow_version }}"
-
-      - name: Clean existing plugin
-        run: rm -rf ~/.nextflow/plugins/nf-anndata*
-
-      - name: Install
-        run: make install
-
-      - name: Validate
-        run: nextflow run validation/
+    uses: ./.github/workflows/build.yml
+    with:
+      java_version: ${{ matrix.java_version }}
+      nextflow_version: ${{ matrix.nextflow_version }}

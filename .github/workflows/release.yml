@@ -6,20 +6,23 @@ on:
       - 'v*'
 
 jobs:
+  build-and-test:
+    name: Build and Test
+    uses: ./.github/workflows/build.yml
+    with:
+      java_version: '17'
+      nextflow_version: '24.10'
+      validate_tag: true
+
   release:
     name: Release Plugin
+    needs: build-and-test
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 10
 
     steps:
-      - name: Environment
-        run: env | sort
-
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          submodules: true
 
       - name: Setup Java 17
         uses: actions/setup-java@v4
@@ -27,40 +30,6 @@ jobs:
           java-version: '17'
           architecture: x64
           distribution: 'temurin'
-
-      - name: Validate version tag
-        run: |
-          TAG=${GITHUB_REF#refs/tags/v}
-          GRADLE_VERSION=$(grep -oP "version = '\K[^']+" build.gradle)
-          CONFIG_VERSION=$(grep -oP "id 'nf-anndata@\K[^']+" validation/nextflow.config)
-          if [ "$TAG" != "$GRADLE_VERSION" ]; then
-            echo "Error: Tag version ($TAG) does not match build.gradle version ($GRADLE_VERSION)"
-            exit 1
-          fi
-          if [ "$GRADLE_VERSION" != "$CONFIG_VERSION" ]; then
-            echo "Error: build.gradle version ($GRADLE_VERSION) does not match validation/nextflow.config version ($CONFIG_VERSION)"
-            exit 1
-          fi
-          echo "VERSION=$TAG" >> $GITHUB_ENV
-          echo "Version consistency check passed: $TAG"
-
-      - name: Run tests
-        run: make test
-        env:
-          GRADLE_OPTS: '-Dorg.gradle.daemon=false'
-
-      - name: Setup Nextflow
-        uses: nf-core/setup-nextflow@v2
-        with:
-          version: "24.10"
-
-      - name: Clean existing plugin
-        run: rm -rf ~/.nextflow/plugins/nf-anndata*
-
-      - name: Install and validate
-        run: |
-          make install
-          nextflow run validation/
 
       - name: Build release artifacts
         run: ./gradlew assemble
@@ -76,21 +45,21 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          name: v${{ env.VERSION }}
+          name: v${{ needs.build-and-test.outputs.version }}
           body: |
-            ## nf-anndata v${{ env.VERSION }}
+            ## nf-anndata v${{ needs.build-and-test.outputs.version }}
             
             ### Installation
             
             ```bash
-            nextflow plugin install nf-anndata@${{ env.VERSION }}
+            nextflow plugin install nf-anndata@${{ needs.build-and-test.outputs.version }}
             ```
             
             Or add to your `nextflow.config`:
             
             ```groovy
             plugins {
-                id 'nf-anndata@${{ env.VERSION }}'
+                id 'nf-anndata@${{ needs.build-and-test.outputs.version }}'
             }
             ```
             
