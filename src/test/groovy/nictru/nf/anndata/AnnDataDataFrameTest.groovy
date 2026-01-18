@@ -39,9 +39,9 @@ class AnnDataDataFrameTest extends AnnDataTestBase {
         where:
         filename << findAllTestFiles()
             .findAll { 
-                // Only test files that are likely to have columns (skip edge cases)
+                // Only test files that are likely to have columns (skip edge cases with no columns)
                 def name = it.fileName.toString()
-                !name.startsWith('edge_') && name != 'x_none.h5ad'
+                !name.startsWith('edge_')
             }
             .collect { it.fileName.toString() }
     }
@@ -76,17 +76,27 @@ class AnnDataDataFrameTest extends AnnDataTestBase {
         def ad = new AnnData(testFile)
         
         when:
-        def intCol = ad.obs.get('int32')
-        def floatCol = ad.obs.get('float32')
+        def int8Col = ad.obs.get('int8')
+        def int16Col = ad.obs.get('int16')
+        def int32Col = ad.obs.get('int32')
+        def int64Col = ad.obs.get('int64')
+        def uint8Col = ad.obs.get('uint8')
+        def float32Col = ad.obs.get('float32')
+        def float64Col = ad.obs.get('float64')
         
         then:
-        intCol != null
-        intCol.data != null
-        intCol.data.length == ad.n_obs
+        // All columns should be accessible and have correct length
+        int8Col.data.length == ad.n_obs
+        int16Col.data.length == ad.n_obs
+        int32Col.data.length == ad.n_obs
+        int64Col.data.length == ad.n_obs
+        uint8Col.data.length == ad.n_obs
+        float32Col.data.length == ad.n_obs
+        float64Col.data.length == ad.n_obs
         
-        floatCol != null
-        floatCol.data != null
-        floatCol.data.length == ad.n_obs
+        // Values should be numeric (not null for non-nullable types)
+        int32Col.data.every { it != null }
+        float32Col.data.every { it != null }
         
         cleanup:
         closeAnnData(ad)

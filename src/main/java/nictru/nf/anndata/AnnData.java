@@ -1,15 +1,15 @@
 package nictru.nf.anndata;
 
 import java.nio.file.Path;
-import io.jhdf.HdfFile;
-import io.jhdf.GroupImpl;
 import java.util.Arrays;
-import java.util.Set;
-import java.util.List;
-import java.util.stream.Collectors;
-import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+import io.jhdf.HdfFile;
+import io.jhdf.api.Group;
 
 public class AnnData extends HdfFile {
     final DataFrame obs;
@@ -28,7 +28,8 @@ public class AnnData extends HdfFile {
     final Set<String> varp;
     final Set<String> uns;
 
-    private final String[] expectedFields = { "X", "layers", "obs", "var", "obsm", "varm", "obsp", "varp", "uns" };
+    // X is optional in h5ad files (can be None)
+    private static final String[] REQUIRED_FIELDS = { "layers", "obs", "var", "obsm", "varm", "obsp", "varp", "uns" };
 
     private final Map<String, Set<String>> fieldObjects;
 
@@ -36,14 +37,15 @@ public class AnnData extends HdfFile {
         super(path);
 
         Set<String> fields = this.getFields();
-        List<String> missingFields = Arrays.stream(expectedFields).filter(field -> !fields.contains(field))
+        List<String> missingFields = Arrays.stream(REQUIRED_FIELDS)
+                .filter(field -> !fields.contains(field))
                 .collect(Collectors.toList());
         if (!missingFields.isEmpty()) {
             throw new IllegalArgumentException("Missing fields: " + missingFields);
         }
 
-        this.obs = new DataFrame((GroupImpl) this.getChild("obs"));
-        this.var = new DataFrame((GroupImpl) this.getChild("var"));
+        this.obs = new DataFrame((Group) this.getChild("obs"));
+        this.var = new DataFrame((Group) this.getChild("var"));
 
         this.obs_names = this.obs.rownames;
         this.var_names = this.var.rownames;
@@ -51,12 +53,12 @@ public class AnnData extends HdfFile {
         this.n_obs = this.obs.size;
         this.n_vars = this.var.size;
 
-        this.layers = this.getFields("layers");
-        this.obsm = this.getFields("obsm");
-        this.varm = this.getFields("varm");
-        this.obsp = this.getFields("obsp");
-        this.varp = this.getFields("varp");
-        this.uns = this.getFields("uns");
+        this.layers = this.getGroupChildKeys("layers");
+        this.obsm = this.getGroupChildKeys("obsm");
+        this.varm = this.getGroupChildKeys("varm");
+        this.obsp = this.getGroupChildKeys("obsp");
+        this.varp = this.getGroupChildKeys("varp");
+        this.uns = this.getGroupChildKeys("uns");
 
         this.fieldObjects = Map.of(
                 "layers", this.layers,
@@ -74,8 +76,8 @@ public class AnnData extends HdfFile {
         return this.getChildren().keySet();
     }
 
-    private Set<String> getFields(String name) {
-        GroupImpl group = (GroupImpl) this.getChild(name);
+    private Set<String> getGroupChildKeys(String name) {
+        Group group = (Group) this.getChild(name);
         return group.getChildren().keySet();
     }
 
@@ -97,4 +99,3 @@ public class AnnData extends HdfFile {
         return sb.toString();
     }
 }
-

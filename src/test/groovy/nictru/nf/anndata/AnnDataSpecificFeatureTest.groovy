@@ -132,4 +132,133 @@ class AnnDataSpecificFeatureTest extends AnnDataTestBase {
         cleanup:
         closeAnnData(ad)
     }
+    
+    def 'should handle named index correctly'() {
+        given:
+        def testFile = findTestFile('index_named.h5ad')
+        def ad = new AnnData(testFile)
+        
+        expect:
+        // Named index should work - index is named 'cell_id'
+        ad.n_obs == 20
+        ad.obs_names != null
+        ad.obs_names.length == 20
+        // First obs name should be 'cell_0'
+        ad.obs_names[0] == 'cell_0'
+        ad.obs_names[19] == 'cell_19'
+        // Index name should be stored in DataFrame
+        ad.obs.indexName == 'cell_id'
+        
+        cleanup:
+        closeAnnData(ad)
+    }
+    
+    def 'should handle empty observations file'() {
+        given:
+        def testFile = findTestFile('edge_empty_obs.h5ad')
+        def ad = new AnnData(testFile)
+        
+        expect:
+        ad.n_obs == 0
+        ad.n_vars == 10
+        ad.obs_names != null
+        ad.obs_names.length == 0
+        ad.var_names.length == 10
+        ad.obs.colnames.length == 0  // No columns in obs
+        
+        cleanup:
+        closeAnnData(ad)
+    }
+    
+    def 'should handle unicode in index and values'() {
+        given:
+        def testFile = findTestFile('edge_unicode.h5ad')
+        def ad = new AnnData(testFile)
+        
+        expect:
+        ad.n_obs == 20
+        // Index should contain unicode characters (Greek letters)
+        ad.obs_names[0].contains('αβγ')
+        // Column values should contain unicode (emoji)
+        def descCol = ad.obs.get('description')
+        descCol.data[0].toString().contains('🧬')
+        
+        cleanup:
+        closeAnnData(ad)
+    }
+    
+    def 'should handle nullable columns with actual null values'() {
+        given:
+        def testFile = findTestFile('dtypes_nullable.h5ad')
+        def ad = new AnnData(testFile)
+        
+        when:
+        def nullableBool = ad.obs.get('nullable_bool')
+        def nullableInt = ad.obs.get('nullable_int')
+        
+        then:
+        nullableBool.data != null
+        nullableBool.data.length == 20
+        // Should have some null values (where mask is true)
+        nullableBool.data.any { it == null }
+        // Should have some non-null values
+        nullableBool.data.any { it != null }
+        
+        nullableInt.data != null
+        nullableInt.data.length == 20
+        // Should have some null values
+        nullableInt.data.any { it == null }
+        
+        cleanup:
+        closeAnnData(ad)
+    }
+    
+    def 'should handle integer index stored as strings'() {
+        given:
+        def testFile = findTestFile('index_integer.h5ad')
+        def ad = new AnnData(testFile)
+        
+        expect:
+        ad.n_obs == 20
+        ad.obs_names != null
+        ad.obs_names.length == 20
+        // Integer indices are stored as strings "0", "1", etc.
+        ad.obs_names[0] == '0'
+        ad.obs_names[1] == '1'
+        ad.obs_names[19] == '19'
+        
+        cleanup:
+        closeAnnData(ad)
+    }
+    
+    def 'should handle real-world pbmc3k file'() {
+        given:
+        def testFile = findTestFile('pbmc3k_processed.h5ad')
+        def ad = new AnnData(testFile)
+        
+        expect:
+        // Real-world file with known dimensions
+        ad.n_obs == 2638
+        ad.n_vars == 1838
+        
+        // Should have expected columns
+        'louvain' in ad.obs.colnames
+        'n_genes' in ad.obs.colnames
+        
+        // Should be able to access categorical column
+        def louvain = ad.obs.get('louvain')
+        louvain.data != null
+        louvain.data.length == 2638
+        louvain.n_unique() > 0
+        
+        // Should have obsm with embeddings
+        'X_pca' in ad.obsm
+        'X_umap' in ad.obsm
+        
+        // Should have layers
+        'counts' in ad.layers
+        
+        cleanup:
+        closeAnnData(ad)
+    }
 }
