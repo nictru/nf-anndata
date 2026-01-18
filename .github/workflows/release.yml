@@ -48,6 +48,9 @@ jobs:
         with:
           version: "24.10"
 
+      - name: Clean existing plugin
+        run: rm -rf ~/.nextflow/plugins/nf-anndata*
+
       - name: Install and validate
         run: |
           make install

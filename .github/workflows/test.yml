@@ -9,8 +9,8 @@ on:
     branches:
       - '*'
 jobs:
-  build:
-    name: Build nf-anndata
+  test:
+    name: Test and build nf-anndata
     if: "!contains(github.event.head_commit.message, '[ci skip]')"
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -47,8 +47,11 @@ jobs:
         with:
           version: "${{ matrix.nextflow_version }}"
 
+      - name: Clean existing plugin
+        run: rm -rf ~/.nextflow/plugins/nf-anndata*
+
       - name: Install
         run: make install
 
-      - name: Test
+      - name: Validate
         run: nextflow run validation/
