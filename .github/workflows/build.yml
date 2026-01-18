@@ -1,54 +1,87 @@
-name: nf-anndata CI
+name: Build and Test
+
 on:
-  push:
-    branches:
-      - '*'
-    tags-ignore:
-      - '*'
-  pull_request:
-    branches:
-      - '*'
+  workflow_call:
+    inputs:
+      java_version:
+        description: 'Java version to use'
+        required: false
+        type: string
+        default: '17'
+      nextflow_version:
+        description: 'Nextflow version to use'
+        required: false
+        type: string
+        default: '24.10'
+      validate_tag:
+        description: 'Whether to validate git tag matches version'
+        required: false
+        type: boolean
+        default: false
+    outputs:
+      version:
+        description: 'The version from build.gradle'
+        value: ${{ jobs.build.outputs.version }}
+
 jobs:
   build:
-    name: Build nf-anndata
-    if: "!contains(github.event.head_commit.message, '[ci skip]')"
+    name: Build and Test
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    strategy:
-      fail-fast: false
-      matrix:
-        java_version: [17, 21]
-        nextflow_version: ['24.10', '25.04']
+    outputs:
+      version: ${{ steps.version.outputs.version }}
 
     steps:
-      - name: Environment
-        run: env | sort
-
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
-          fetch-depth: 1
+          fetch-depth: ${{ inputs.validate_tag && '0' || '1' }}
           submodules: true
 
-      - name: Setup Java ${{ matrix.java_version }}
-        uses: actions/setup-java@v3
+      - name: Validate versions
+        id: version
+        run: |
+          GRADLE_VERSION=$(grep -oP "version = '\K[^']+" build.gradle)
+          CONFIG_VERSION=$(grep -oP "id 'nf-anndata@\K[^']+" validation/nextflow.config)
+          
+          if [ "$GRADLE_VERSION" != "$CONFIG_VERSION" ]; then
+            echo "Error: build.gradle version ($GRADLE_VERSION) does not match validation/nextflow.config version ($CONFIG_VERSION)"
+            exit 1
+          fi
+          
+          if [ "${{ inputs.validate_tag }}" = "true" ]; then
+            TAG=${GITHUB_REF#refs/tags/v}
+            if [ "$TAG" != "$GRADLE_VERSION" ]; then
+              echo "Error: Tag version ($TAG) does not match build.gradle version ($GRADLE_VERSION)"
+              exit 1
+            fi
+          fi
+          
+          echo "version=$GRADLE_VERSION" >> $GITHUB_OUTPUT
+          echo "Version consistency check passed: $GRADLE_VERSION"
+
+      - name: Setup Java ${{ inputs.java_version }}
+        uses: actions/setup-java@v4
         with:
-          java-version: ${{matrix.java_version}}
+          java-version: ${{ inputs.java_version }}
           architecture: x64
           distribution: 'temurin'
 
-      - name: Tests
+      - name: Run tests
         run: make test
         env:
           GRADLE_OPTS: '-Dorg.gradle.daemon=false'
 
-      - name: Setup Nextflow ${{ matrix.nextflow_version }}
-        uses: nf-core/setup-nextflow@b9f764e8ba5c76b712ace14ecbfcef0e40ae2dd8 # v1
+      - name: Setup Nextflow ${{ inputs.nextflow_version }}
+        uses: nf-core/setup-nextflow@v2
         with:
-          version: "${{ matrix.nextflow_version }}"
+          version: ${{ inputs.nextflow_version }}
 
-      - name: Install
+      - name: Clean existing plugin
+        run: rm -rf ~/.nextflow/plugins/nf-anndata*
+
+      - name: Install plugin
         run: make install
 
-      - name: Test
+      - name: Run validation
         run: nextflow run validation/
