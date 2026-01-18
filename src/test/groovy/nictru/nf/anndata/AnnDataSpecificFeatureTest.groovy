@@ -146,8 +146,8 @@ class AnnDataSpecificFeatureTest extends AnnDataTestBase {
         // First obs name should be 'cell_0'
         ad.obs_names[0] == 'cell_0'
         ad.obs_names[19] == 'cell_19'
-        // Index name should be stored in DataFrame
-        ad.obs.indexName == 'cell_id'
+        // Index name should be accessible via index object
+        ad.obs.index.name == 'cell_id'
         
         cleanup:
         closeAnnData(ad)

@@ -199,12 +199,17 @@ public class DataFrameColumn {
                 .toArray();
     }
 
-    public Set<Object> getUnique() {
+    /**
+     * Get unique values in the column.
+     * Similar to pandas Series.unique()
+     * 
+     * @return Set of unique values
+     */
+    public Set<Object> unique() {
         if (data == null || data.length == 0) {
             return new HashSet<>();
         }
 
-        // Use a HashSet to count unique values
         Set<Object> uniqueValues = new HashSet<>();
         for (Object value : data) {
             uniqueValues.add(value);
@@ -213,7 +218,13 @@ public class DataFrameColumn {
         return uniqueValues;
     }
 
+    /**
+     * Get the number of unique values in the column.
+     * Similar to pandas Series.nunique()
+     * 
+     * @return Number of unique values
+     */
     public int n_unique() {
-        return this.getUnique().size();
+        return this.unique().size();
     }
 }

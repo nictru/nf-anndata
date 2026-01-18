@@ -9,14 +9,15 @@ public class DataFrame {
     final String[] rownames;
     final int size;
     final Group group;
-    final String indexName;
+    final DataFrameIndex index;
 
     public DataFrame(Group group) {
-        this.indexName = getIndexName(group);
-        this.colnames = getColumnNames(group);
-        this.rownames = getRowNames(group);
+        String indexName = getIndexName(group);
+        this.colnames = getColumnNames(group, indexName);
+        this.rownames = getRowNames(group, indexName);
         this.size = this.rownames.length;
         this.group = group;
+        this.index = new DataFrameIndex(this.rownames, indexName);
     }
 
     private String getIndexName(Group group) {
@@ -32,16 +33,16 @@ public class DataFrame {
         return "_index";
     }
 
-    private String[] getColumnNames(Group group) {
+    private String[] getColumnNames(Group group, String indexName) {
         return (String[]) group.getChildren().keySet().stream()
-                .filter(key -> !key.equals(this.indexName))
+                .filter(key -> !key.equals(indexName))
                 .toArray(String[]::new);
     }
 
-    private String[] getRowNames(Group group) {
-        Dataset index = (Dataset) group.getChild(this.indexName);
+    private String[] getRowNames(Group group, String indexName) {
+        Dataset index = (Dataset) group.getChild(indexName);
         if (index == null) {
-            throw new IllegalArgumentException("Index '" + this.indexName + "' not found in group: " + group.getName());
+            throw new IllegalArgumentException("Index '" + indexName + "' not found in group: " + group.getName());
         }
         
         // Check for empty dataset (0 dimensions)
