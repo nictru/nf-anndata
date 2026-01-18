@@ -41,35 +41,3 @@ jobs:
         env:
           GRADLE_OPTS: '-Dorg.gradle.daemon=false'
           NPR_API_KEY: ${{ secrets.NPR_API_KEY }}
-
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
-        with:
-          name: v${{ needs.build-and-test.outputs.version }}
-          body: |
-            ## nf-anndata v${{ needs.build-and-test.outputs.version }}
-            
-            ### Installation
-            
-            ```bash
-            nextflow plugin install nf-anndata@${{ needs.build-and-test.outputs.version }}
-            ```
-            
-            Or add to your `nextflow.config`:
-            
-            ```groovy
-            plugins {
-                id 'nf-anndata@${{ needs.build-and-test.outputs.version }}'
-            }
-            ```
-            
-            ### Changes
-            
-            See [CHANGELOG](https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md) for details.
-          files: |
-            build/libs/*.jar
-            build/distributions/*.zip
-          draft: false
-          prerelease: false
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
