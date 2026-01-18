@@ -32,11 +32,17 @@ jobs:
         run: |
           TAG=${GITHUB_REF#refs/tags/v}
           GRADLE_VERSION=$(grep -oP "version = '\K[^']+" build.gradle)
+          CONFIG_VERSION=$(grep -oP "id 'nf-anndata@\K[^']+" validation/nextflow.config)
           if [ "$TAG" != "$GRADLE_VERSION" ]; then
             echo "Error: Tag version ($TAG) does not match build.gradle version ($GRADLE_VERSION)"
             exit 1
           fi
+          if [ "$GRADLE_VERSION" != "$CONFIG_VERSION" ]; then
+            echo "Error: build.gradle version ($GRADLE_VERSION) does not match validation/nextflow.config version ($CONFIG_VERSION)"
+            exit 1
+          fi
           echo "VERSION=$TAG" >> $GITHUB_ENV
+          echo "Version consistency check passed: $TAG"
 
       - name: Run tests
         run: make test
