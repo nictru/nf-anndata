@@ -28,6 +28,13 @@ abstract class AnnDataTestBase extends Specification {
     }
     
     /**
+     * Find the default test file (pbmc3k_processed.h5ad)
+     */
+    protected Path findTestFile() {
+        return findTestFile('pbmc3k_processed.h5ad')
+    }
+    
+    /**
      * Find a specific test file by name
      */
     protected Path findTestFile(String filename) {
