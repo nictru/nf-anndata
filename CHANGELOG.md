@@ -5,6 +5,23 @@ All notable changes to nf-anndata will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.1] - 2026-01-27
+
+### Fixed
+
+- **Fixed OutOfMemoryError for large S3 files** ([#6](https://github.com/nictru/nf-anndata/issues/6))
+  - S3-backed files were being loaded entirely into memory, causing `OutOfMemoryError` for files larger than ~2GB
+  - Root cause: When `workDir` is remote (e.g., S3), the staging directory was also remote, triggering Nextflow's `S3FileSystemProvider.newByteChannel()` which buffers the entire file in memory
+  - Now stages remote files to a local temporary directory (`/tmp/nf-anndata-cache/`) using efficient streaming download via AWS TransferManager
+
+### Changed
+
+- **Improved remote file staging**
+  - Staging now uses `FilesEx.copyTo()` which leverages provider-specific optimizations (e.g., AWS TransferManager for S3)
+  - Cache is based on file path hash only, allowing reuse across pipeline runs on the same machine
+  - Staged files are automatically cleaned up when the Nextflow session ends
+  - Thread-safe concurrent access handling with proper lock management
+
 ## [0.3.0] - 2026-01-19
 
 ### Added
@@ -93,6 +110,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Column unique values with `n_unique()`
 - Nextflow plugin integration with `anndata()` function
 
+[0.3.1]: https://github.com/nictru/nf-anndata/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/nictru/nf-anndata/compare/v0.2.3...v0.3.0
 [0.2.3]: https://github.com/nictru/nf-anndata/compare/v0.2.2...v0.2.3
 [0.2.2]: https://github.com/nictru/nf-anndata/compare/v0.2.1...v0.2.2
