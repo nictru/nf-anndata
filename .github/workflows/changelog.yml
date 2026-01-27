@@ -1,0 +1,37 @@
+name: Changelog Check
+
+on:
+  pull_request:
+    branches:
+      - main
+    types: [opened, synchronize, reopened]
+
+jobs:
+  changelog:
+    name: Check CHANGELOG.md updated
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check if CHANGELOG.md was modified
+        run: |
+          # Get the list of changed files in this PR
+          CHANGED_FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD)
+          
+          echo "Changed files in this PR:"
+          echo "$CHANGED_FILES"
+          echo ""
+          
+          # Check if CHANGELOG.md is in the list
+          if echo "$CHANGED_FILES" | grep -q "^CHANGELOG.md$"; then
+            echo "✅ CHANGELOG.md has been updated"
+          else
+            echo "❌ CHANGELOG.md has NOT been updated"
+            echo ""
+            echo "Please update CHANGELOG.md with a description of your changes."
+            echo "Follow the format in https://keepachangelog.com/en/1.1.0/"
+            exit 1
+          fi
