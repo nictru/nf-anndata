@@ -123,7 +123,7 @@ def generate_dtypes_categorical():
     obs = pd.DataFrame({
         "cat_unordered": pd.Categorical(rng.choice(["A", "B", "C"], N_OBS), ordered=False),
         "cat_ordered": pd.Categorical(rng.choice(["low", "medium", "high"], N_OBS), 
-                                      categories=["low", "medium", "high"], ordered=True),
+                                        categories=["low", "medium", "high"], ordered=True),
     }, index=obs_names)
     
     var = pd.DataFrame({
@@ -546,6 +546,85 @@ def generate_edge_unicode():
     adata.write_h5ad(output_dir / "edge_unicode.h5ad")
 
 
+def generate_compression_gzip():
+    """Generate h5ad with internal gzip compression on datasets.
+    
+    This tests that nf-anndata can read h5ad files where the HDF5 datasets
+    are internally compressed using gzip (deflate) compression. This is
+    different from externally gzipping the entire file (.h5ad.gz).
+    """
+    obs_names = [f"cell_{i}" for i in range(N_OBS)]
+    var_names = [f"gene_{i}" for i in range(N_VARS)]
+    
+    obs = pd.DataFrame({
+        "cluster": pd.Categorical(rng.choice(["A", "B", "C"], N_OBS), ordered=False),
+        "n_genes": rng.integers(100, 1000, N_OBS, dtype=np.int32),
+        "total_counts": rng.random(N_OBS, dtype=np.float32),
+    }, index=obs_names)
+    
+    var = pd.DataFrame({
+        "gene_type": pd.Categorical(rng.choice(["protein", "rna"], N_VARS), ordered=False),
+        "mean_counts": rng.random(N_VARS, dtype=np.float32),
+    }, index=var_names)
+    
+    adata = ad.AnnData(
+        X=rng.random((N_OBS, N_VARS), dtype=np.float32),
+        obs=obs,
+        var=var,
+        obsm={
+            "X_pca": rng.random((N_OBS, 10), dtype=np.float32),
+        },
+        layers={
+            "counts": rng.random((N_OBS, N_VARS), dtype=np.float32),
+        },
+        uns={
+            "description": "Test file with gzip compression",
+            "compression_level": 4,
+        }
+    )
+    adata.obs.index.name = None
+    adata.var.index.name = None
+    
+    # Write with gzip compression enabled
+    adata.write_h5ad(output_dir / "compression_gzip.h5ad", compression="gzip")
+
+
+def generate_compression_gzip_high():
+    """Generate h5ad with high-level gzip compression (level 9).
+    
+    Tests maximum gzip compression level to ensure nf-anndata handles
+    heavily compressed datasets correctly.
+    """
+    obs_names = [f"cell_{i}" for i in range(N_OBS)]
+    var_names = [f"gene_{i}" for i in range(N_VARS)]
+    
+    # Create sparse matrix - compresses well
+    X = sparse.random(N_OBS, N_VARS, density=0.1, format='csr', dtype=np.float32, random_state=sparse_rng)
+    
+    obs = pd.DataFrame({
+        "cluster": pd.Categorical(rng.choice(["A", "B", "C"], N_OBS), ordered=False),
+        "batch": rng.choice(["batch1", "batch2"], N_OBS),
+    }, index=obs_names)
+    
+    var = pd.DataFrame({
+        "gene_symbol": [f"GENE_{i}" for i in range(N_VARS)],
+    }, index=var_names)
+    
+    adata = ad.AnnData(
+        X=X,
+        obs=obs,
+        var=var,
+        layers={
+            "normalized": sparse.random(N_OBS, N_VARS, density=0.1, format='csr', dtype=np.float32, random_state=sparse_rng),
+        },
+    )
+    adata.obs.index.name = None
+    adata.var.index.name = None
+    
+    # Write with maximum gzip compression
+    adata.write_h5ad(output_dir / "compression_gzip_high.h5ad", compression="gzip", compression_opts=9)
+
+
 def generate_full_featured():
     """Generate h5ad with all features combined."""
     obs_names = [f"cell_{i}" for i in range(N_OBS)]
@@ -603,13 +682,18 @@ def generate_full_featured():
 
 def generate_pbmc3k():
     """Generate the original pbmc3k_processed.h5ad file (for backwards compatibility)."""
-import scanpy as sc
+    import scanpy as sc
+    import tempfile
 
-adata = sc.datasets.pbmc3k_processed()
-adata.obs.index.name = None
-adata.var.index.name = None
-adata.layers["counts"] = adata.X
-adata.write_h5ad(output_dir / "pbmc3k_processed.h5ad")
+    # Use a temporary directory for scanpy's dataset cache to avoid creating
+    # a 'data' subdirectory in the script's location
+    with tempfile.TemporaryDirectory() as tmpdir:
+        sc.settings.datasetdir = tmpdir
+        adata = sc.datasets.pbmc3k_processed()
+        adata.obs.index.name = None
+        adata.var.index.name = None
+        adata.layers["counts"] = adata.X
+        adata.write_h5ad(output_dir / "pbmc3k_processed.h5ad")
 
 
 if __name__ == "__main__":
@@ -639,6 +723,8 @@ if __name__ == "__main__":
         ("edge_empty_obs.h5ad", generate_edge_empty_obs),
         ("edge_unicode.h5ad", generate_edge_unicode),
         ("full_featured.h5ad", generate_full_featured),
+        ("compression_gzip.h5ad", generate_compression_gzip),
+        ("compression_gzip_high.h5ad", generate_compression_gzip_high),
     ]
     
     tqdm.write("Generating comprehensive test h5ad files...")
@@ -655,4 +741,4 @@ if __name__ == "__main__":
     
     tqdm.write("\n" + "=" * 60)
     tqdm.write(f"All h5ad files generated in '{output_dir}/' directory")
-    tqdm.write(f"Total files: {len(test_generators) + 1} (24 test cases + 1 pbmc3k)")
+    tqdm.write(f"Total files: {len(test_generators) + 1} (26 test cases + 1 pbmc3k)")
