@@ -261,4 +261,77 @@ class AnnDataSpecificFeatureTest extends AnnDataTestBase {
         cleanup:
         closeAnnData(ad)
     }
+    
+    def 'should handle internally gzip-compressed h5ad file'() {
+        given:
+        def testFile = findTestFile('compression_gzip.h5ad')
+        def ad = new AnnData(testFile)
+        
+        expect:
+        // Basic structure should be readable
+        ad.n_obs == 20
+        ad.n_vars == 10
+        ad.obs != null
+        ad.var != null
+        
+        // Should have expected columns in obs
+        'cluster' in ad.obs.colnames
+        'n_genes' in ad.obs.colnames
+        'total_counts' in ad.obs.colnames
+        
+        // Should have expected columns in var
+        'gene_type' in ad.var.colnames
+        'mean_counts' in ad.var.colnames
+        
+        // Should be able to read categorical column
+        def cluster = ad.obs.get('cluster')
+        cluster.data != null
+        cluster.data.length == 20
+        
+        // Should have obsm
+        'X_pca' in ad.obsm
+        
+        // Should have layers
+        'counts' in ad.layers
+        
+        // Should have uns
+        'description' in ad.uns
+        'compression_level' in ad.uns
+        
+        cleanup:
+        closeAnnData(ad)
+    }
+    
+    def 'should handle high-level gzip-compressed h5ad file with sparse data'() {
+        given:
+        def testFile = findTestFile('compression_gzip_high.h5ad')
+        def ad = new AnnData(testFile)
+        
+        expect:
+        // Basic structure should be readable
+        ad.n_obs == 20
+        ad.n_vars == 10
+        ad.obs != null
+        ad.var != null
+        
+        // Should have expected columns
+        'cluster' in ad.obs.colnames
+        'batch' in ad.obs.colnames
+        'gene_symbol' in ad.var.colnames
+        
+        // Should be able to read data
+        def cluster = ad.obs.get('cluster')
+        cluster.data != null
+        cluster.data.length == 20
+        
+        def batch = ad.obs.get('batch')
+        batch.data != null
+        batch.data.every { it in ['batch1', 'batch2'] }
+        
+        // Should have layers (sparse, compressed)
+        'normalized' in ad.layers
+        
+        cleanup:
+        closeAnnData(ad)
+    }
 }
