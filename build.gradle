@@ -10,7 +10,7 @@ configurations {
 }
 
 dependencies {
-    implementation 'io.jhdf:jhdf:0.10.0'
+    implementation 'io.jhdf:jhdf'
     // SLF4J is provided by Nextflow at runtime
     compileOnly 'org.slf4j:slf4j-api:2.0.17'
 }

@@ -1,6 +1,7 @@
 package nictru.nf.anndata
 
 import spock.lang.Unroll
+import java.nio.file.Paths
 
 /**
  * Tests for specific features in test files
@@ -302,6 +303,25 @@ class AnnDataSpecificFeatureTest extends AnnDataTestBase {
         closeAnnData(ad)
     }
     
+    def 'should handle chunked vlen string dataset with empty shuffle filterData'() {
+        given:
+        // This file has an obs/_index dataset that is ChunkedDatasetV3 with a shuffle filter
+        // whose filterData is empty (no explicit cd_values). Previously caused
+        // ArrayIndexOutOfBoundsException in ByteShuffleFilter.decode.
+        def testFile = Paths.get('src/test/data/chunked.h5ad')
+        def ad = new AnnData(testFile)
+
+        expect:
+        ad.n_obs == 7373
+        ad.obs_names != null
+        ad.obs_names.length == 7373
+        ad.obs_names[0] == 'AAACCTGAGATATGGT'
+        ad.obs_names.every { it != null && it.length() > 0 }
+
+        cleanup:
+        closeAnnData(ad)
+    }
+
     def 'should handle high-level gzip-compressed h5ad file with sparse data'() {
         given:
         def testFile = findTestFile('compression_gzip_high.h5ad')
