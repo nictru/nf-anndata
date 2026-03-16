@@ -1,1 +1,3 @@
 rootProject.name = 'nf-anndata'
+
+includeBuild 'deps/jhdf/jhdf'

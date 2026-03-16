@@ -1,0 +1,3 @@
+[submodule "deps/jhdf"]
+	path = deps/jhdf
+	url = git@github.com:nictru/jhdf.git
