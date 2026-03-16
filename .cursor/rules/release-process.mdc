@@ -1,0 +1,43 @@
+---
+description: Steps for creating a new release of nf-anndata
+globs: build.gradle,CHANGELOG.md,validation/nextflow.config
+alwaysApply: false
+---
+
+# Release Process
+
+When the user asks to create a new release, **ask whether it is a major, minor, or patch release** if not explicitly specified. Do not assume patch.
+
+## Files to update
+
+Given current version `X.Y.Z`, bump to `X.Y.(Z+1)`:
+
+1. **`build.gradle`** — update `version`
+   ```groovy
+   version = 'X.Y.(Z+1)'
+   ```
+
+2. **`validation/nextflow.config`** — update plugin reference
+   ```groovy
+   id 'nf-anndata@X.Y.(Z+1)'
+   ```
+
+3. **`CHANGELOG.md`** — three changes:
+   - Promote all content under `## [Unreleased]` into a new versioned section (today's date, ISO format)
+   - Leave `## [Unreleased]` empty above it
+   - Add a comparison link at the bottom:
+   ```
+   [X.Y.(Z+1)]: https://github.com/nictru/nf-anndata/compare/vX.Y.Z...vX.Y.(Z+1)
+   ```
+
+## CHANGELOG section format
+
+```markdown
+## [Unreleased]
+
+## [X.Y.(Z+1)] - YYYY-MM-DD
+
+### Added
+
+- **Short title** — description of change
+```
