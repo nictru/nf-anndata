@@ -7,7 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.3] - 2026-03-16
+
 ### Added
+
+- **Support for chunked HDF5 datasets**
+  - h5ad files using HDF5 chunked storage layout are now read correctly
+  - Previously, chunked datasets would fail or return incorrect data
 
 - **Test coverage for internally gzip-compressed h5ad files**
   - Added test files `compression_gzip.h5ad` and `compression_gzip_high.h5ad` to verify that reading gzip-compressed HDF5 datasets works correctly
@@ -126,6 +132,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Column unique values with `n_unique()`
 - Nextflow plugin integration with `anndata()` function
 
+[0.3.3]: https://github.com/nictru/nf-anndata/compare/v0.3.2...v0.3.3
 [0.3.2]: https://github.com/nictru/nf-anndata/compare/v0.3.1...v0.3.2
 [0.3.1]: https://github.com/nictru/nf-anndata/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/nictru/nf-anndata/compare/v0.2.3...v0.3.0
