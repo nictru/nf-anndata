@@ -354,4 +354,21 @@ class AnnDataSpecificFeatureTest extends AnnDataTestBase {
         cleanup:
         closeAnnData(ad)
     }
+
+    def 'should load R-generated file with byte-string indices (test_decontx.h5ad)'() {
+        given:
+        def ad = new AnnData(Paths.get('src/test/data/test_decontx.h5ad'))
+
+        expect:
+        ad.n_obs == 7373
+        ad.n_vars == 9887
+        ad.obs_names[0] == 'AAACCTGAGATATGGT'
+        ad.var_names[0] == 'LINC02934'
+        'ambient_corrected_decontx' in ad.layers
+        ad.obs.get('sample') != null
+        ad.obs.get('sample').data.length == 7373
+
+        cleanup:
+        closeAnnData(ad)
+    }
 }
