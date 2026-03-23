@@ -8,6 +8,15 @@ alwaysApply: false
 
 When the user asks to create a new release, **ask whether it is a major, minor, or patch release** if not explicitly specified. Do not assume patch.
 
+## Before releasing — update submodule
+
+Check whether the patched jhdf fork has relevant updates and update the submodule pointer if so:
+
+```bash
+cd deps/jhdf && git pull origin main && cd ../..
+git add deps/jhdf
+```
+
 ## Files to update
 
 Given current version `X.Y.Z`, bump to `X.Y.(Z+1)`:
