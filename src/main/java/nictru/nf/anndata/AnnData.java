@@ -1,7 +1,9 @@
 package nictru.nf.anndata;
 
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -97,5 +99,43 @@ public class AnnData extends HdfFile {
         sb.append(String.join("\n", fieldStrings));
 
         return sb.toString();
+    }
+
+    /**
+     * Returns a YAML representation of the AnnData structure.
+     * Suitable for nf-test snapshot assertions via path(file).anndata().yaml
+     */
+    public String getYaml() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("n_obs: ").append(n_obs).append("\n");
+        sb.append("n_vars: ").append(n_vars).append("\n");
+        appendDataFrameYaml(sb, "obs", obs);
+        appendDataFrameYaml(sb, "var", var);
+        appendSetYaml(sb, "layers", layers);
+        appendSetYaml(sb, "obsm", obsm);
+        appendSetYaml(sb, "varm", varm);
+        appendSetYaml(sb, "obsp", obsp);
+        appendSetYaml(sb, "varp", varp);
+        appendSetYaml(sb, "uns", uns);
+        return sb.toString();
+    }
+
+    private void appendDataFrameYaml(StringBuilder sb, String name, DataFrame df) {
+        sb.append(name).append(":\n");
+        sb.append("  index: ").append(df.index.getName()).append("\n");
+        sb.append("  columns:\n");
+        // preserve original column order
+        for (String col : df.colnames) {
+            sb.append("    - ").append(col).append("\n");
+        }
+    }
+
+    private void appendSetYaml(StringBuilder sb, String name, Set<String> values) {
+        sb.append(name).append(":\n");
+        List<String> sorted = new ArrayList<>(values);
+        Collections.sort(sorted);
+        for (String v : sorted) {
+            sb.append("  - ").append(v).append("\n");
+        }
     }
 }

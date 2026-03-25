@@ -371,4 +371,27 @@ class AnnDataSpecificFeatureTest extends AnnDataTestBase {
         cleanup:
         closeAnnData(ad)
     }
+
+    def 'should produce correct yaml representation'() {
+        given:
+        def ad = new AnnData(findTestFile('pbmc3k_processed.h5ad'))
+
+        when:
+        def yaml = ad.yaml
+
+        then:
+        yaml.contains('n_obs: 2638')
+        yaml.contains('n_vars: 1838')
+        yaml.contains('obs:')
+        yaml.contains('  index: _index')
+        yaml.contains('    - louvain')
+        yaml.contains('var:')
+        yaml.contains('layers:')
+        yaml.contains('  - counts')
+        yaml.contains('obsm:')
+        yaml.contains('  - X_umap')
+
+        cleanup:
+        closeAnnData(ad)
+    }
 }
