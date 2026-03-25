@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-03-23
+
+### Added
+
+- **`yaml` property on `AnnData`** — returns a structured YAML summary of the AnnData object (dimensions, obs/var column names, available layers/obsm/varm/obsp/varp/uns keys). Designed for nf-test snapshot assertions:
+  ```groovy
+  assert path(output).anndata().yaml == snapshot.match()
+  ```
+
+- **Support for R-generated h5ad files (e.g. decontX output)**
+  - Variable-length byte string indices written by R's `rhdf5` package are now correctly decoded to strings
+  - `int64` categorical codes (used by R vs `int8` in Python) are handled correctly
+  - CSC sparse matrices and empty `obsm`/`varm`/`obsp`/`varp` groups are supported
+
 ## [0.3.4] - 2026-03-17
 
 ### Added
@@ -141,6 +155,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Column unique values with `n_unique()`
 - Nextflow plugin integration with `anndata()` function
 
+[0.4.0]: https://github.com/nictru/nf-anndata/compare/v0.3.4...v0.4.0
 [0.3.4]: https://github.com/nictru/nf-anndata/compare/v0.3.3...v0.3.4
 [0.3.3]: https://github.com/nictru/nf-anndata/compare/v0.3.2...v0.3.3
 [0.3.2]: https://github.com/nictru/nf-anndata/compare/v0.3.1...v0.3.2
