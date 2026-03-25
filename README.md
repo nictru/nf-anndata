@@ -148,6 +148,58 @@ ch_adata.map { ad ->
 }
 ```
 
+### YAML representation
+
+The `yaml` property returns a structured YAML summary of the AnnData object — useful for nf-test snapshot assertions:
+
+```nextflow
+ch_adata.map { ad ->
+    println ad.yaml
+}
+```
+
+Example output:
+
+```yaml
+n_obs: 2638
+n_vars: 1838
+obs:
+  index: _index
+  columns:
+    - louvain
+    - n_counts
+    - n_genes
+    - percent_mito
+var:
+  index: _index
+  columns:
+    - n_cells
+layers:
+  - counts
+obsm:
+  - X_pca
+  - X_umap
+varm:
+  - PCs
+obsp:
+  - connectivities
+  - distances
+varp:
+uns:
+  - louvain
+  - neighbors
+  - pca
+```
+
+In nf-test, this enables snapshot testing of the entire AnnData structure:
+
+```groovy
+then {
+    assert path(output).anndata().yaml == snapshot.match()
+}
+```
+```
+
 ## API Reference
 
 ### `anndata(String path)` / `anndata(Path path)`
@@ -177,6 +229,7 @@ The AnnData object provides the following properties and methods:
 - `obsp` (Set<String>) - Available obsp field names
 - `varp` (Set<String>) - Available varp field names
 - `uns` (Set<String>) - Available uns field names
+- `yaml` (String) - YAML representation of the AnnData structure (dimensions, column names, available fields). Useful for nf-test snapshot assertions.
 
 #### Methods
 
