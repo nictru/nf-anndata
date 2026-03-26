@@ -680,6 +680,40 @@ def generate_full_featured():
     adata.write_h5ad(output_dir / "full_featured.h5ad")
 
 
+def generate_index_categorical():
+    """Generate h5ad where the obs and var indices are stored as categorical groups.
+
+    When anndata writes a CategoricalIndex to HDF5 it stores it as a group
+    with ``encoding-type: categorical``, i.e. a ``categories`` dataset and a
+    ``codes`` dataset, rather than a plain string dataset.  This variant must
+    be handled by DataFrame.getRowNames().
+    """
+    import string
+
+    obs_names = pd.CategoricalIndex(
+        [f"cell_{i}" for i in range(N_OBS)], name=None
+    )
+    var_names = pd.CategoricalIndex(
+        [f"gene_{i}" for i in range(N_VARS)], name=None
+    )
+
+    adata = ad.AnnData(
+        X=rng.random((N_OBS, N_VARS), dtype=np.float32),
+        obs=pd.DataFrame(
+            {"cluster": pd.Categorical(rng.choice(["A", "B", "C"], N_OBS))},
+            index=obs_names,
+        ),
+        var=pd.DataFrame(
+            {"gene_type": pd.Categorical(rng.choice(["protein", "rna"], N_VARS))},
+            index=var_names,
+        ),
+    )
+    adata.obs.index.name = None
+    adata.var.index.name = None
+
+    adata.write_h5ad(output_dir / "index_categorical.h5ad")
+
+
 def generate_pbmc3k():
     """Generate the original pbmc3k_processed.h5ad file (for backwards compatibility)."""
     import scanpy as sc
@@ -725,6 +759,7 @@ if __name__ == "__main__":
         ("full_featured.h5ad", generate_full_featured),
         ("compression_gzip.h5ad", generate_compression_gzip),
         ("compression_gzip_high.h5ad", generate_compression_gzip_high),
+        ("index_categorical.h5ad", generate_index_categorical),
     ]
     
     tqdm.write("Generating comprehensive test h5ad files...")
@@ -741,4 +776,4 @@ if __name__ == "__main__":
     
     tqdm.write("\n" + "=" * 60)
     tqdm.write(f"All h5ad files generated in '{output_dir}/' directory")
-    tqdm.write(f"Total files: {len(test_generators) + 1} (26 test cases + 1 pbmc3k)")
+    tqdm.write(f"Total files: {len(test_generators) + 1} (27 test cases + 1 pbmc3k)")

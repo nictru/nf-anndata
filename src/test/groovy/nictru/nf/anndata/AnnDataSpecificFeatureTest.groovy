@@ -355,6 +355,32 @@ class AnnDataSpecificFeatureTest extends AnnDataTestBase {
         closeAnnData(ad)
     }
 
+    def 'should handle file with categorical obs and var index'() {
+        given:
+        def testFile = findTestFile('index_categorical.h5ad')
+        def ad = new AnnData(testFile)
+
+        expect:
+        ad.n_obs == 20
+        ad.n_vars == 10
+        // obs names decoded from categorical categories+codes
+        ad.obs_names != null
+        ad.obs_names.length == 20
+        ad.obs_names[0] == 'cell_0'
+        ad.obs_names[19] == 'cell_19'
+        // var names decoded from categorical categories+codes
+        ad.var_names != null
+        ad.var_names.length == 10
+        ad.var_names[0] == 'gene_0'
+        ad.var_names[9] == 'gene_9'
+        // Regular columns should still work
+        'cluster' in ad.obs.colnames
+        'gene_type' in ad.var.colnames
+
+        cleanup:
+        closeAnnData(ad)
+    }
+
     def 'should load R-generated file with byte-string indices (test_decontx.h5ad)'() {
         given:
         def ad = new AnnData(Paths.get('src/test/data/test_decontx.h5ad'))

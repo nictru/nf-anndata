@@ -3,6 +3,7 @@ package nictru.nf.anndata;
 import io.jhdf.api.Attribute;
 import io.jhdf.api.Dataset;
 import io.jhdf.api.Group;
+import java.util.stream.IntStream;
 
 public class DataFrame {
     final String[] colnames;
@@ -40,32 +41,33 @@ public class DataFrame {
     }
 
     private String[] getRowNames(Group group, String indexName) {
-        Dataset index = (Dataset) group.getChild(indexName);
-        if (index == null) {
+        Object child = group.getChild(indexName);
+        if (child == null) {
             throw new IllegalArgumentException("Index '" + indexName + "' not found in group: " + group.getName());
         }
-        
+
+        // Categorical index: stored as a group with categories + codes children
+        if (child instanceof Group) {
+            return decodeCategoricalIndex((Group) child);
+        }
+
+        Dataset index = (Dataset) child;
+
         // Check for empty dataset (0 dimensions)
         int[] dimensions = index.getDimensions();
         if (dimensions.length == 0 || dimensions[0] == 0) {
             return new String[0];
         }
-        
+
         Object data = index.getData();
         if (data == null) {
-            // Empty dataset
             return new String[0];
         }
         if (data instanceof String[]) {
             return (String[]) data;
         } else if (data instanceof Object[]) {
-            // Handle Object[] (which may contain strings)
-            Object[] objData = (Object[]) data;
-            String[] result = new String[objData.length];
-            for (int i = 0; i < objData.length; i++) {
-                result[i] = objData[i] != null ? objData[i].toString() : "";
-            }
-            return result;
+            // Handle Object[] (which may contain strings or byte[] from R-generated files)
+            return toStringArray((Object[]) data);
         } else if (data instanceof long[]) {
             // Handle integer indices
             long[] longData = (long[]) data;
@@ -83,6 +85,58 @@ public class DataFrame {
             return result;
         } else {
             throw new IllegalArgumentException("Unsupported index data type: " + data.getClass());
+        }
+    }
+
+    private String[] decodeCategoricalIndex(Group indexGroup) {
+        Dataset categoriesDs = (Dataset) indexGroup.getChild("categories");
+        Dataset codesDs = (Dataset) indexGroup.getChild("codes");
+
+        Object catData = categoriesDs.getData();
+        String[] categories;
+        if (catData instanceof String[]) {
+            categories = (String[]) catData;
+        } else if (catData instanceof Object[]) {
+            categories = toStringArray((Object[]) catData);
+        } else {
+            throw new IllegalArgumentException("Unsupported categories type in index: " + catData.getClass());
+        }
+
+        int[] codes = convertCodesToIntArray(codesDs.getData());
+        final String[] cats = categories;
+        return IntStream.range(0, codes.length)
+                .mapToObj(i -> codes[i] < 0 ? "" : cats[codes[i]])
+                .toArray(String[]::new);
+    }
+
+    private static String[] toStringArray(Object[] arr) {
+        String[] result = new String[arr.length];
+        for (int i = 0; i < arr.length; i++) {
+            result[i] = arr[i] != null ? arr[i].toString() : "";
+        }
+        return result;
+    }
+
+    private static int[] convertCodesToIntArray(Object codesData) {
+        if (codesData instanceof byte[]) {
+            byte[] arr = (byte[]) codesData;
+            int[] result = new int[arr.length];
+            for (int i = 0; i < arr.length; i++) result[i] = arr[i];
+            return result;
+        } else if (codesData instanceof short[]) {
+            short[] arr = (short[]) codesData;
+            int[] result = new int[arr.length];
+            for (int i = 0; i < arr.length; i++) result[i] = arr[i];
+            return result;
+        } else if (codesData instanceof int[]) {
+            return (int[]) codesData;
+        } else if (codesData instanceof long[]) {
+            long[] arr = (long[]) codesData;
+            int[] result = new int[arr.length];
+            for (int i = 0; i < arr.length; i++) result[i] = (int) arr[i];
+            return result;
+        } else {
+            throw new IllegalArgumentException("Unsupported index codes type: " + codesData.getClass());
         }
     }
 
