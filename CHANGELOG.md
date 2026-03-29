@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Categorical group indices** — `obs` and `var` indices stored as a categorical HDF5 group (`encoding-type: categorical`, with `categories` + `codes` children) are now decoded correctly instead of throwing a `ClassCastException`. This affects h5ad files produced by tools that write a `pd.CategoricalIndex` as the obs/var index.
+
 ## [0.4.0] - 2026-03-23
 
 ### Added
