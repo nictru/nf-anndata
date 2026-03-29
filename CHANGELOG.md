@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.1] - 2026-03-16
+
 ### Added
 
 - **`yaml` property on `AnnData`** (breaking change from 0.4.0) — now returns a `Map<String, Object>` instead of a YAML string. nf-test serialises Maps as pretty-printed JSON, so snapshot assertions are rendered cleanly with each field on its own line:
@@ -166,6 +168,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Column unique values with `n_unique()`
 - Nextflow plugin integration with `anndata()` function
 
+[0.4.1]: https://github.com/nictru/nf-anndata/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/nictru/nf-anndata/compare/v0.3.4...v0.4.0
 [0.3.4]: https://github.com/nictru/nf-anndata/compare/v0.3.3...v0.3.4
 [0.3.3]: https://github.com/nictru/nf-anndata/compare/v0.3.2...v0.3.3
