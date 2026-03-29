@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **`yaml` property on `AnnData`** (breaking change from 0.4.0) — now returns a `Map<String, Object>` instead of a YAML string. nf-test serialises Maps as pretty-printed JSON, so snapshot assertions are rendered cleanly with each field on its own line:
+  ```groovy
+  assert path(output).anndata().yaml == snapshot.match()
+  ```
+
 ### Fixed
 
 - **Categorical group indices** — `obs` and `var` indices stored as a categorical HDF5 group (`encoding-type: categorical`, with `categories` + `codes` children) are now decoded correctly instead of throwing a `ClassCastException`. This affects h5ad files produced by tools that write a `pd.CategoricalIndex` as the obs/var index.

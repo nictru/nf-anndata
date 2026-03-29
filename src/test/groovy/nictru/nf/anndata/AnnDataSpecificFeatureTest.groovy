@@ -406,18 +406,31 @@ class AnnDataSpecificFeatureTest extends AnnDataTestBase {
         def yaml = ad.yaml
 
         then:
-        yaml.contains('n_obs: 2638')
-        yaml.contains('n_vars: 1838')
-        yaml.contains('obs:')
-        yaml.contains('  index: _index')
-        yaml.contains('    - louvain')
-        yaml.contains('var:')
-        yaml.contains('layers:')
-        yaml.contains('  - counts')
-        yaml.contains('obsm:')
-        yaml.contains('  - X_umap')
+        yaml.n_obs == 2638
+        yaml.n_vars == 1838
+        yaml.obs instanceof Map
+        yaml.obs.index == '_index'
+        yaml.obs.columns.contains('louvain')
+        yaml.obs.columns.contains('n_counts')
+        yaml.obs.columns.contains('n_genes')
+        yaml.obs.columns.contains('percent_mito')
+        yaml.var instanceof Map
+        yaml.var.index == '_index'
+        yaml.var.columns.contains('n_cells')
+        yaml.layers.contains('counts')
+        yaml.obsm.contains('X_pca')
+        yaml.obsm.contains('X_umap')
+        yaml.varm.contains('PCs')
+        yaml.obsp.contains('connectivities')
+        yaml.obsp.contains('distances')
+        yaml.uns.contains('louvain')
+        yaml.uns.contains('neighbors')
+        yaml.uns.contains('pca')
+        yaml.containsKey('varp')
+        yaml.containsKey('obsp')
 
         cleanup:
         closeAnnData(ad)
     }
+
 }

@@ -150,7 +150,7 @@ ch_adata.map { ad ->
 
 ### YAML representation
 
-The `yaml` property returns a structured YAML summary of the AnnData object — useful for nf-test snapshot assertions:
+The `yaml` property returns a `Map` representation of the AnnData object. Despite the name, the data is structured — nf-test serialises it as pretty-printed JSON, so each field appears on its own line in the snapshot file:
 
 ```nextflow
 ch_adata.map { ad ->
@@ -158,46 +158,35 @@ ch_adata.map { ad ->
 }
 ```
 
-Example output:
+Example snapshot output (as stored in `.nf-test.snap`):
 
-```yaml
-n_obs: 2638
-n_vars: 1838
-obs:
-  index: _index
-  columns:
-    - louvain
-    - n_counts
-    - n_genes
-    - percent_mito
-var:
-  index: _index
-  columns:
-    - n_cells
-layers:
-  - counts
-obsm:
-  - X_pca
-  - X_umap
-varm:
-  - PCs
-obsp:
-  - connectivities
-  - distances
-varp:
-uns:
-  - louvain
-  - neighbors
-  - pca
+```json
+{
+  "n_obs": 2638,
+  "n_vars": 1838,
+  "obs": {
+    "index": "_index",
+    "columns": ["louvain", "n_counts", "n_genes", "percent_mito"]
+  },
+  "var": {
+    "index": "_index",
+    "columns": ["n_cells"]
+  },
+  "layers": ["counts"],
+  "obsm": ["X_draw_graph_fr", "X_pca", "X_tsne", "X_umap"],
+  "varm": ["PCs"],
+  "obsp": ["connectivities", "distances"],
+  "varp": [],
+  "uns": ["louvain", "neighbors", "pca"]
+}
 ```
 
-In nf-test, this enables snapshot testing of the entire AnnData structure:
+In nf-test, this enables clean snapshot testing of the entire AnnData structure:
 
 ```groovy
 then {
     assert path(output).anndata().yaml == snapshot.match()
 }
-```
 ```
 
 ## API Reference
@@ -229,7 +218,7 @@ The AnnData object provides the following properties and methods:
 - `obsp` (Set<String>) - Available obsp field names
 - `varp` (Set<String>) - Available varp field names
 - `uns` (Set<String>) - Available uns field names
-- `yaml` (String) - YAML representation of the AnnData structure (dimensions, column names, available fields). Useful for nf-test snapshot assertions.
+- `yaml` (Map) - Structured map of the AnnData object (dimensions, obs/var index name and column names, available field keys). nf-test serialises it as pretty-printed JSON, making it suitable for snapshot assertions.
 
 #### Methods
 

@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -102,40 +103,35 @@ public class AnnData extends HdfFile {
     }
 
     /**
-     * Returns a YAML representation of the AnnData structure.
+     * Returns the AnnData structure as a Map.
      * Suitable for nf-test snapshot assertions via path(file).anndata().yaml
+     * nf-test serialises Maps as pretty-printed JSON, so each field renders on its own line.
      */
-    public String getYaml() {
-        StringBuilder sb = new StringBuilder();
-        sb.append("n_obs: ").append(n_obs).append("\n");
-        sb.append("n_vars: ").append(n_vars).append("\n");
-        appendDataFrameYaml(sb, "obs", obs);
-        appendDataFrameYaml(sb, "var", var);
-        appendSetYaml(sb, "layers", layers);
-        appendSetYaml(sb, "obsm", obsm);
-        appendSetYaml(sb, "varm", varm);
-        appendSetYaml(sb, "obsp", obsp);
-        appendSetYaml(sb, "varp", varp);
-        appendSetYaml(sb, "uns", uns);
-        return sb.toString();
+    public Map<String, Object> getYaml() {
+        Map<String, Object> map = new LinkedHashMap<>();
+        map.put("n_obs", n_obs);
+        map.put("n_vars", n_vars);
+        map.put("obs", dataFrameMap(obs));
+        map.put("var", dataFrameMap(var));
+        map.put("layers", sortedList(layers));
+        map.put("obsm", sortedList(obsm));
+        map.put("varm", sortedList(varm));
+        map.put("obsp", sortedList(obsp));
+        map.put("varp", sortedList(varp));
+        map.put("uns", sortedList(uns));
+        return map;
     }
 
-    private void appendDataFrameYaml(StringBuilder sb, String name, DataFrame df) {
-        sb.append(name).append(":\n");
-        sb.append("  index: ").append(df.index.getName()).append("\n");
-        sb.append("  columns:\n");
-        // preserve original column order
-        for (String col : df.colnames) {
-            sb.append("    - ").append(col).append("\n");
-        }
+    private Map<String, Object> dataFrameMap(DataFrame df) {
+        Map<String, Object> map = new LinkedHashMap<>();
+        map.put("index", df.index.getName());
+        map.put("columns", Arrays.asList(df.colnames));
+        return map;
     }
 
-    private void appendSetYaml(StringBuilder sb, String name, Set<String> values) {
-        sb.append(name).append(":\n");
-        List<String> sorted = new ArrayList<>(values);
-        Collections.sort(sorted);
-        for (String v : sorted) {
-            sb.append("  - ").append(v).append("\n");
-        }
+    private List<String> sortedList(Set<String> values) {
+        List<String> list = new ArrayList<>(values);
+        Collections.sort(list);
+        return list;
     }
 }
