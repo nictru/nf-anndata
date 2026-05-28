@@ -1,0 +1,12 @@
+{
+  "column-order": [
+    "PC0",
+    "PC1",
+    "PC2",
+    "PC3",
+    "PC4"
+  ],
+  "_index": "_index",
+  "encoding-type": "dataframe",
+  "encoding-version": "0.2.0"
+}

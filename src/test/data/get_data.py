@@ -1,10 +1,12 @@
 #!/usr/bin/env python
 """
-Generate comprehensive test h5ad files covering all edge cases in the anndata format.
+Generate comprehensive test AnnData files covering all edge cases in the anndata format.
 
-This script generates a suite of h5ad files for testing nf-anndata's ability
-to read various structural variations possible in h5ad files.
+This script generates a suite of h5ad and zarr stores for testing nf-anndata's ability
+to read various structural variations possible in AnnData files.
 """
+
+import shutil
 
 import numpy as np
 import pandas as pd
@@ -16,9 +18,25 @@ from tqdm import tqdm
 # Get the directory where this script is located
 SCRIPT_DIR = Path(__file__).parent.resolve()
 
-# Create output directory for all h5ad files relative to script location
+# Create output directory for all test files relative to script location
 output_dir = SCRIPT_DIR / "test_cases"
 output_dir.mkdir(exist_ok=True)
+
+
+def write_adata(adata, name: str, *, compression=None, compression_opts=None):
+    """Write AnnData to both h5ad and zarr formats."""
+    h5ad_kwargs = {}
+    if compression is not None:
+        h5ad_kwargs["compression"] = compression
+    if compression_opts is not None:
+        h5ad_kwargs["compression_opts"] = compression_opts
+
+    adata.write_h5ad(output_dir / f"{name}.h5ad", **h5ad_kwargs)
+
+    zarr_path = output_dir / f"{name}.zarr"
+    if zarr_path.exists():
+        shutil.rmtree(zarr_path)
+    adata.write_zarr(zarr_path)
 
 # Standard dimensions for test files
 N_OBS = 20
@@ -45,7 +63,7 @@ def generate_index_unnamed():
     adata.obs.index.name = None
     adata.var.index.name = None
     
-    adata.write_h5ad(output_dir / "index_unnamed.h5ad")
+    write_adata(adata, "index_unnamed")
 
 
 def generate_index_named():
@@ -65,7 +83,7 @@ def generate_index_named():
         var=var_df
     )
     
-    adata.write_h5ad(output_dir / "index_named.h5ad")
+    write_adata(adata, "index_named")
 
 
 def generate_index_integer():
@@ -81,7 +99,7 @@ def generate_index_integer():
     adata.obs.index.name = None
     adata.var.index.name = None
     
-    adata.write_h5ad(output_dir / "index_integer.h5ad")
+    write_adata(adata, "index_integer")
 
 
 def generate_dtypes_numeric():
@@ -112,7 +130,7 @@ def generate_dtypes_numeric():
     adata.obs.index.name = None
     adata.var.index.name = None
     
-    adata.write_h5ad(output_dir / "dtypes_numeric.h5ad")
+    write_adata(adata, "dtypes_numeric")
 
 
 def generate_dtypes_categorical():
@@ -138,7 +156,7 @@ def generate_dtypes_categorical():
     adata.obs.index.name = None
     adata.var.index.name = None
     
-    adata.write_h5ad(output_dir / "dtypes_categorical.h5ad")
+    write_adata(adata, "dtypes_categorical")
 
 
 def generate_dtypes_boolean():
@@ -163,7 +181,7 @@ def generate_dtypes_boolean():
     adata.obs.index.name = None
     adata.var.index.name = None
     
-    adata.write_h5ad(output_dir / "dtypes_boolean.h5ad")
+    write_adata(adata, "dtypes_boolean")
 
 
 def generate_dtypes_nullable():
@@ -194,7 +212,7 @@ def generate_dtypes_nullable():
     adata.obs.index.name = None
     adata.var.index.name = None
     
-    adata.write_h5ad(output_dir / "dtypes_nullable.h5ad")
+    write_adata(adata, "dtypes_nullable")
 
 
 def generate_dtypes_string():
@@ -219,7 +237,7 @@ def generate_dtypes_string():
     adata.obs.index.name = None
     adata.var.index.name = None
     
-    adata.write_h5ad(output_dir / "dtypes_string.h5ad")
+    write_adata(adata, "dtypes_string")
 
 
 def generate_x_dense_float32():
@@ -235,7 +253,7 @@ def generate_x_dense_float32():
     adata.obs.index.name = None
     adata.var.index.name = None
     
-    adata.write_h5ad(output_dir / "x_dense_float32.h5ad")
+    write_adata(adata, "x_dense_float32")
 
 
 def generate_x_dense_float64():
@@ -251,7 +269,7 @@ def generate_x_dense_float64():
     adata.obs.index.name = None
     adata.var.index.name = None
     
-    adata.write_h5ad(output_dir / "x_dense_float64.h5ad")
+    write_adata(adata, "x_dense_float64")
 
 
 def generate_x_sparse_csr():
@@ -270,7 +288,7 @@ def generate_x_sparse_csr():
     adata.obs.index.name = None
     adata.var.index.name = None
     
-    adata.write_h5ad(output_dir / "x_sparse_csr.h5ad")
+    write_adata(adata, "x_sparse_csr")
 
 
 def generate_x_sparse_csc():
@@ -289,7 +307,7 @@ def generate_x_sparse_csc():
     adata.obs.index.name = None
     adata.var.index.name = None
     
-    adata.write_h5ad(output_dir / "x_sparse_csc.h5ad")
+    write_adata(adata, "x_sparse_csc")
 
 
 def generate_x_none():
@@ -306,7 +324,7 @@ def generate_x_none():
     adata.obs.index.name = None
     adata.var.index.name = None
     
-    adata.write_h5ad(output_dir / "x_none.h5ad")
+    write_adata(adata, "x_none")
 
 
 def generate_obsm_dense():
@@ -329,7 +347,7 @@ def generate_obsm_dense():
     adata.obs.index.name = None
     adata.var.index.name = None
     
-    adata.write_h5ad(output_dir / "obsm_dense.h5ad")
+    write_adata(adata, "obsm_dense")
 
 
 def generate_obsm_sparse():
@@ -351,7 +369,7 @@ def generate_obsm_sparse():
     adata.obs.index.name = None
     adata.var.index.name = None
     
-    adata.write_h5ad(output_dir / "obsm_sparse.h5ad")
+    write_adata(adata, "obsm_sparse")
 
 
 def generate_obsm_dataframe():
@@ -381,7 +399,7 @@ def generate_obsm_dataframe():
     adata.obs.index.name = None
     adata.var.index.name = None
     
-    adata.write_h5ad(output_dir / "obsm_dataframe.h5ad")
+    write_adata(adata, "obsm_dataframe")
 
 
 def generate_obsp_dense():
@@ -404,7 +422,7 @@ def generate_obsp_dense():
     adata.obs.index.name = None
     adata.var.index.name = None
     
-    adata.write_h5ad(output_dir / "obsp_dense.h5ad")
+    write_adata(adata, "obsp_dense")
 
 
 def generate_obsp_sparse():
@@ -426,7 +444,7 @@ def generate_obsp_sparse():
     adata.obs.index.name = None
     adata.var.index.name = None
     
-    adata.write_h5ad(output_dir / "obsp_sparse.h5ad")
+    write_adata(adata, "obsp_sparse")
 
 
 def generate_layers_mixed():
@@ -447,7 +465,7 @@ def generate_layers_mixed():
     adata.obs.index.name = None
     adata.var.index.name = None
     
-    adata.write_h5ad(output_dir / "layers_mixed.h5ad")
+    write_adata(adata, "layers_mixed")
 
 
 def generate_uns_nested():
@@ -486,7 +504,7 @@ def generate_uns_nested():
     adata.obs.index.name = None
     adata.var.index.name = None
     
-    adata.write_h5ad(output_dir / "uns_nested.h5ad")
+    write_adata(adata, "uns_nested")
 
 
 def generate_edge_minimal():
@@ -502,7 +520,7 @@ def generate_edge_minimal():
     adata.obs.index.name = None
     adata.var.index.name = None
     
-    adata.write_h5ad(output_dir / "edge_minimal.h5ad")
+    write_adata(adata, "edge_minimal")
 
 
 def generate_edge_empty_obs():
@@ -518,7 +536,7 @@ def generate_edge_empty_obs():
     adata.obs.index.name = None
     adata.var.index.name = None
     
-    adata.write_h5ad(output_dir / "edge_empty_obs.h5ad")
+    write_adata(adata, "edge_empty_obs")
 
 
 def generate_edge_unicode():
@@ -543,7 +561,7 @@ def generate_edge_unicode():
     adata.obs.index.name = None
     adata.var.index.name = None
     
-    adata.write_h5ad(output_dir / "edge_unicode.h5ad")
+    write_adata(adata, "edge_unicode")
 
 
 def generate_compression_gzip():
@@ -586,7 +604,7 @@ def generate_compression_gzip():
     adata.var.index.name = None
     
     # Write with gzip compression enabled
-    adata.write_h5ad(output_dir / "compression_gzip.h5ad", compression="gzip")
+    write_adata(adata, "compression_gzip", compression="gzip")
 
 
 def generate_compression_gzip_high():
@@ -622,7 +640,7 @@ def generate_compression_gzip_high():
     adata.var.index.name = None
     
     # Write with maximum gzip compression
-    adata.write_h5ad(output_dir / "compression_gzip_high.h5ad", compression="gzip", compression_opts=9)
+    write_adata(adata, "compression_gzip_high", compression="gzip", compression_opts=9)
 
 
 def generate_full_featured():
@@ -677,7 +695,7 @@ def generate_full_featured():
     adata.obs.index.name = None
     adata.var.index.name = None
     
-    adata.write_h5ad(output_dir / "full_featured.h5ad")
+    write_adata(adata, "full_featured")
 
 
 def generate_index_categorical():
@@ -711,7 +729,7 @@ def generate_index_categorical():
     adata.obs.index.name = None
     adata.var.index.name = None
 
-    adata.write_h5ad(output_dir / "index_categorical.h5ad")
+    write_adata(adata, "index_categorical")
 
 
 def generate_pbmc3k():
@@ -727,53 +745,54 @@ def generate_pbmc3k():
         adata.obs.index.name = None
         adata.var.index.name = None
         adata.layers["counts"] = adata.X
-        adata.write_h5ad(output_dir / "pbmc3k_processed.h5ad")
+        write_adata(adata, "pbmc3k_processed")
 
 
 if __name__ == "__main__":
     # List of all generation functions with their display names
     test_generators = [
-        ("index_unnamed.h5ad", generate_index_unnamed),
-        ("index_named.h5ad", generate_index_named),
-        ("index_integer.h5ad", generate_index_integer),
-        ("dtypes_numeric.h5ad", generate_dtypes_numeric),
-        ("dtypes_categorical.h5ad", generate_dtypes_categorical),
-        ("dtypes_boolean.h5ad", generate_dtypes_boolean),
-        ("dtypes_nullable.h5ad", generate_dtypes_nullable),
-        ("dtypes_string.h5ad", generate_dtypes_string),
-        ("x_dense_float32.h5ad", generate_x_dense_float32),
-        ("x_dense_float64.h5ad", generate_x_dense_float64),
-        ("x_sparse_csr.h5ad", generate_x_sparse_csr),
-        ("x_sparse_csc.h5ad", generate_x_sparse_csc),
-        ("x_none.h5ad", generate_x_none),
-        ("obsm_dense.h5ad", generate_obsm_dense),
-        ("obsm_sparse.h5ad", generate_obsm_sparse),
-        ("obsm_dataframe.h5ad", generate_obsm_dataframe),
-        ("obsp_dense.h5ad", generate_obsp_dense),
-        ("obsp_sparse.h5ad", generate_obsp_sparse),
-        ("layers_mixed.h5ad", generate_layers_mixed),
-        ("uns_nested.h5ad", generate_uns_nested),
-        ("edge_minimal.h5ad", generate_edge_minimal),
-        ("edge_empty_obs.h5ad", generate_edge_empty_obs),
-        ("edge_unicode.h5ad", generate_edge_unicode),
-        ("full_featured.h5ad", generate_full_featured),
-        ("compression_gzip.h5ad", generate_compression_gzip),
-        ("compression_gzip_high.h5ad", generate_compression_gzip_high),
-        ("index_categorical.h5ad", generate_index_categorical),
+        ("index_unnamed", generate_index_unnamed),
+        ("index_named", generate_index_named),
+        ("index_integer", generate_index_integer),
+        ("dtypes_numeric", generate_dtypes_numeric),
+        ("dtypes_categorical", generate_dtypes_categorical),
+        ("dtypes_boolean", generate_dtypes_boolean),
+        ("dtypes_nullable", generate_dtypes_nullable),
+        ("dtypes_string", generate_dtypes_string),
+        ("x_dense_float32", generate_x_dense_float32),
+        ("x_dense_float64", generate_x_dense_float64),
+        ("x_sparse_csr", generate_x_sparse_csr),
+        ("x_sparse_csc", generate_x_sparse_csc),
+        ("x_none", generate_x_none),
+        ("obsm_dense", generate_obsm_dense),
+        ("obsm_sparse", generate_obsm_sparse),
+        ("obsm_dataframe", generate_obsm_dataframe),
+        ("obsp_dense", generate_obsp_dense),
+        ("obsp_sparse", generate_obsp_sparse),
+        ("layers_mixed", generate_layers_mixed),
+        ("uns_nested", generate_uns_nested),
+        ("edge_minimal", generate_edge_minimal),
+        ("edge_empty_obs", generate_edge_empty_obs),
+        ("edge_unicode", generate_edge_unicode),
+        ("full_featured", generate_full_featured),
+        ("compression_gzip", generate_compression_gzip),
+        ("compression_gzip_high", generate_compression_gzip_high),
+        ("index_categorical", generate_index_categorical),
     ]
     
-    tqdm.write("Generating comprehensive test h5ad files...")
+    tqdm.write("Generating comprehensive test h5ad and zarr files...")
     tqdm.write("=" * 60)
     
     # Generate all test case files with progress bar
-    for filename, generator_func in tqdm(test_generators, desc="Generating test cases", unit="file"):
+    for name, generator_func in tqdm(test_generators, desc="Generating test cases", unit="case"):
         generator_func()
     
     # Generate original pbmc3k file
     tqdm.write("\n" + "=" * 60)
-    tqdm.write("Generating pbmc3k_processed.h5ad...")
+    tqdm.write("Generating pbmc3k_processed...")
     generate_pbmc3k()
     
+    n_cases = len(test_generators) + 1
     tqdm.write("\n" + "=" * 60)
-    tqdm.write(f"All h5ad files generated in '{output_dir}/' directory")
-    tqdm.write(f"Total files: {len(test_generators) + 1} (27 test cases + 1 pbmc3k)")
+    tqdm.write(f"All test files generated in '{output_dir}/' directory")
+    tqdm.write(f"Total cases: {n_cases} ({len(test_generators)} test cases + 1 pbmc3k), each as .h5ad and .zarr")
