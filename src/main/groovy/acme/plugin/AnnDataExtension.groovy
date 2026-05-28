@@ -32,7 +32,7 @@ import nextflow.plugin.extension.PluginExtensionPoint
 import nictru.nf.anndata.AnnData
 
 /**
- * Implements custom functions for reading AnnData (.h5ad) files
+ * Implements custom functions for reading AnnData (.h5ad and .zarr) stores
  * which can be imported by Nextflow scripts.
  */
 @Slf4j
@@ -135,7 +135,9 @@ class AnnDataExtension extends PluginExtensionPoint {
      * Stage a remote file to local cache if needed.
      * Downloads the file to a local temporary directory to enable random access
      * required by the HDF5 library.
-     * 
+     *
+     * Remote .zarr directory stores are not supported in this release.
+     *
      * Staged files are automatically cleaned up when the Nextflow session ends.
      *
      * @param path The path to the file (local or remote)
@@ -144,6 +146,12 @@ class AnnDataExtension extends PluginExtensionPoint {
     private Path stageIfRemote(Path path) {
         if (!isRemotePath(path)) {
             return path
+        }
+
+        def fileName = path.getFileName()
+        if (fileName != null && fileName.toString().endsWith('.zarr')) {
+            throw new UnsupportedOperationException(
+                "Remote Zarr stores are not supported. Use a local .zarr directory instead: ${path}")
         }
         
         // Register cleanup hook on first remote file access
@@ -161,7 +169,6 @@ class AnnDataExtension extends PluginExtensionPoint {
                 .resolve(hashStr.substring(2))
         
         // Get filename safely (handle edge case of root paths)
-        def fileName = path.getFileName()
         if (fileName == null) {
             throw new IllegalArgumentException("Cannot stage remote path without filename: ${path}")
         }
@@ -211,21 +218,23 @@ class AnnDataExtension extends PluginExtensionPoint {
 
     /**
      * Load an AnnData object from a file path string.
+     * Supports .h5ad files and local .zarr directories.
      *
-     * @param path The path to the .h5ad file as a String
+     * @param path The path to the AnnData store as a String
      * @return AnnData object with access to obs, var, layers, obsm, varm, etc.
      */
     @Function
     AnnData anndata(String path) {
-        return new AnnData(Path.of(path))
+        return anndata(Path.of(path))
     }
 
     /**
      * Load an AnnData object from a Path object.
-     * Remote files (S3, GCS, Azure, HTTP, etc.) are automatically staged
+     * Supports .h5ad files and local .zarr directories.
+     * Remote .h5ad files (S3, GCS, Azure, HTTP, etc.) are automatically staged
      * to a local temporary directory before reading.
      *
-     * @param path The path to the .h5ad file as a Path
+     * @param path The path to the AnnData store as a Path
      * @return AnnData object with access to obs, var, layers, obsm, varm, etc.
      */
     @Function

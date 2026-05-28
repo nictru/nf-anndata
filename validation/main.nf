@@ -1,8 +1,11 @@
 include { anndata } from 'plugin/nf-anndata'
 
 workflow {
-    def testFile = file('src/test/data/test_cases/pbmc3k_processed.h5ad', checkIfExists: true)
-    ch_adata = channel.of(testFile).map { file -> anndata(file) }
+    def testFiles = [
+        file('src/test/data/test_cases/pbmc3k_processed.h5ad', checkIfExists: true),
+        file('src/test/data/test_cases/pbmc3k_processed.zarr', checkIfExists: true),
+    ]
+    ch_adata = channel.fromList(testFiles).map { file -> anndata(file) }
 
     // Basic properties
     ch_adata.map { ad -> println "n_obs: ${ad.n_obs}" }

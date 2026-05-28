@@ -1,0 +1,34 @@
+{
+  "shape": [
+    5
+  ],
+  "chunks": [
+    5
+  ],
+  "dtype": [
+    [
+      "name",
+      "<U10"
+    ],
+    [
+      "value",
+      "<f4"
+    ],
+    [
+      "count",
+      "<i4"
+    ]
+  ],
+  "fill_value": "MAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+  "order": "C",
+  "filters": null,
+  "dimension_separator": ".",
+  "compressor": {
+    "id": "blosc",
+    "cname": "lz4",
+    "clevel": 5,
+    "shuffle": 1,
+    "blocksize": 0
+  },
+  "zarr_format": 2
+}

@@ -1,6 +1,15 @@
 # nf-anndata
 
-Nextflow plugin for reading and accessing properties from AnnData (.h5ad) files.
+Nextflow plugin for reading and accessing properties from AnnData stores in `.h5ad` and `.zarr` formats.
+
+## Supported formats
+
+| Format | Path | Notes |
+|--------|------|-------|
+| `.h5ad` | Single HDF5 file | Remote paths (S3, GCS, Azure, HTTP) are staged locally before reading |
+| `.zarr` | Local directory store | AnnData-on-Zarr v2 via patched [zarr-java](deps/zarr-java) (including vlen-utf8 string columns); remote Zarr stores are not supported yet |
+
+The backend is selected automatically from the path extension (`.h5ad` file or `.zarr` directory).
 
 ## Features
 
@@ -65,9 +74,13 @@ Import the `anndata` function in your Nextflow script:
 include { anndata } from 'plugin/nf-anndata'
 
 workflow {
-    // Load an AnnData from a file
+    // Load an AnnData store (.h5ad file or .zarr directory)
     def testFile = file('path/to/your/anndata/file.h5ad', checkIfExists: true)
     ch_adata = channel.of(testFile).map { file -> anndata(file) }
+
+    // Zarr stores are local directories
+    def zarrFile = file('path/to/your/anndata/file.zarr', checkIfExists: true)
+    ch_zarr = channel.of(zarrFile).map { file -> anndata(file) }
 
     // Alternatively, you can also load from a string
     ch_adata = channel.of(anndata('path/to/your.h5ad'))
@@ -193,10 +206,10 @@ then {
 
 ### `anndata(String path)` / `anndata(Path path)`
 
-Loads an AnnData object from a file path.
+Loads an AnnData object from a file or directory path.
 
 **Parameters:**
-- `path` - Path to the .h5ad file (String or Path)
+- `path` - Path to a `.h5ad` file or local `.zarr` directory (String or Path)
 
 **Returns:** `AnnData` object
 
@@ -222,7 +235,7 @@ The AnnData object provides the following properties and methods:
 
 #### Methods
 
-- `close()` - Close the HDF5 file handle (inherited from HdfFile)
+- `close()` - Release backend resources for the AnnData store
 
 ### DataFrame Object
 
@@ -274,6 +287,14 @@ To build the plugin:
 
 ```bash
 make assemble
+```
+
+The Zarr backend uses a patched copy of [zarr-java](deps/zarr-java) wired in via Gradle composite build (`includeBuild 'deps/zarr-java'`). After changing the submodule, run `./gradlew test` from the repository root; Gradle builds the local `dev.zarr:zarr-java:0.1.4-SNAPSHOT` artifact automatically.
+
+To run zarr-java tests directly:
+
+```bash
+cd deps/zarr-java && ../../gradlew test
 ```
 
 ## Testing

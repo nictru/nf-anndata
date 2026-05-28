@@ -1,117 +1,67 @@
 package nictru.nf.anndata;
 
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.stream.IntStream;
 
-import io.jhdf.api.Dataset;
-import io.jhdf.api.Group;
+import nictru.nf.anndata.store.ArrayDataUtils;
+import nictru.nf.anndata.store.StoreArray;
+import nictru.nf.anndata.store.StoreGroup;
+import nictru.nf.anndata.store.StoreNode;
 
 public class DataFrameColumn {
     final Object[] data;
 
-    public DataFrameColumn(Group group, String name) {
-        // Can be Dataset or Group
-        Object child = group.getChild(name);
+    public DataFrameColumn(StoreGroup group, String name) {
+        StoreNode child = group.getChild(name);
         if (child == null) {
             throw new IllegalArgumentException("Column '" + name + "' not found in group: " + group.getName());
         }
-        if (child instanceof Dataset) {
-            this.data = convertDatasetToObjectArray((Dataset) child);
-        } else if (child instanceof Group) {
-            Group dataGroup = (Group) child;
-            this.data = handleGroupData(dataGroup);
+        if (child.isArray()) {
+            this.data = ArrayDataUtils.toObjectArray(ArrayDataUtils.readArrayData(child.asArray()));
+        } else if (child.isGroup()) {
+            this.data = handleGroupData(child.asGroup());
         } else {
-            throw new IllegalArgumentException("Invalid data type for column '" + name + "': " + child.getClass());
+            throw new IllegalArgumentException("Invalid data type for column '" + name + "'");
         }
     }
 
-    private Object[] convertDatasetToObjectArray(Dataset dataset) {
-        Object currentData = dataset.getData();
-        if (currentData == null) {
-            return new Object[0];
-        }
-        if (currentData instanceof String[]) {
-            return (String[]) currentData;
-        } else if (currentData instanceof Object[]) {
-            return (Object[]) currentData;
-        } else if (currentData.getClass().isArray()) {
-            // Handle primitive arrays by converting them to Object arrays
-            if (currentData instanceof int[]) {
-                return Arrays.stream((int[]) currentData).boxed().toArray(Object[]::new);
-            } else if (currentData instanceof float[]) {
-                float[] arr = (float[]) currentData;
-                return IntStream.range(0, arr.length)
-                        .mapToDouble(i -> arr[i]).boxed().toArray(Object[]::new);
-            } else if (currentData instanceof double[]) {
-                return Arrays.stream((double[]) currentData).boxed().toArray(Object[]::new);
-            } else if (currentData instanceof long[]) {
-                return Arrays.stream((long[]) currentData).boxed().toArray(Object[]::new);
-            } else if (currentData instanceof byte[]) {
-                byte[] arr = (byte[]) currentData;
-                Object[] result = new Object[arr.length];
-                for (int i = 0; i < arr.length; i++) {
-                    result[i] = arr[i];
-                }
-                return result;
-            } else if (currentData instanceof short[]) {
-                short[] arr = (short[]) currentData;
-                Object[] result = new Object[arr.length];
-                for (int i = 0; i < arr.length; i++) {
-                    result[i] = (int) arr[i];
-                }
-                return result;
-            } else if (currentData instanceof boolean[]) {
-                boolean[] arr = (boolean[]) currentData;
-                Object[] result = new Object[arr.length];
-                for (int i = 0; i < arr.length; i++) {
-                    result[i] = arr[i];
-                }
-                return result;
-            } else {
-                throw new IllegalArgumentException("Unsupported array type: " + currentData.getClass());
-            }
-        } else {
-            throw new IllegalArgumentException("Expected array type, got: " + currentData.getClass());
-        }
-    }
-
-    private Object[] handleGroupData(Group dataGroup) {
-        // Check if this is a categorical column (has categories and codes)
+    private Object[] handleGroupData(StoreGroup dataGroup) {
         if (dataGroup.getChild("categories") != null && dataGroup.getChild("codes") != null) {
             return handleCategoricalData(dataGroup);
         }
-        // Check if this is a nullable column (has mask and values)
-        else if (dataGroup.getChild("mask") != null && dataGroup.getChild("values") != null) {
+        if (dataGroup.getChild("mask") != null && dataGroup.getChild("values") != null) {
             return handleNullableData(dataGroup);
         }
-        else {
-            throw new IllegalArgumentException("Unknown group structure with keys: " + dataGroup.getChildren().keySet());
+        throw new IllegalArgumentException("Unknown group structure with keys: " + dataGroup.getChildKeys());
+    }
+
+    private Object[] handleCategoricalData(StoreGroup dataGroup) {
+        StoreNode categoriesNode = dataGroup.getChild("categories");
+        StoreNode codesNode = dataGroup.getChild("codes");
+        if (categoriesNode == null || codesNode == null || !categoriesNode.isArray() || !codesNode.isArray()) {
+            throw new IllegalArgumentException("Invalid categorical column in group: " + dataGroup.getName());
         }
+
+        Object[] categoriesArray = ArrayDataUtils.toObjectArray(
+                ArrayDataUtils.readArrayData(categoriesNode.asArray()));
+        int[] codesArray = ArrayDataUtils.convertCodesToIntArray(
+                ArrayDataUtils.readArrayData(codesNode.asArray()));
+
+        return ArrayDataUtils.decodeCategoriesInt(categoriesArray, codesArray);
     }
 
-    private Object[] handleCategoricalData(Group dataGroup) {
-        Dataset categories = (Dataset) dataGroup.getChild("categories");
-        Object[] categoriesArray = (Object[]) categories.getData();
+    private Object[] handleNullableData(StoreGroup dataGroup) {
+        StoreNode valuesNode = dataGroup.getChild("values");
+        StoreNode maskNode = dataGroup.getChild("mask");
+        if (valuesNode == null || maskNode == null || !valuesNode.isArray() || !maskNode.isArray()) {
+            throw new IllegalArgumentException("Invalid nullable column in group: " + dataGroup.getName());
+        }
 
-        Dataset codes = (Dataset) dataGroup.getChild("codes");
-        Object codesData = codes.getData();
-        
-        // Handle different code types (byte, short, int, long)
-        int[] codesArray = convertToIntArray(codesData);
-        
-        return decodeCategoriesInt(categoriesArray, codesArray);
-    }
+        Object[] valuesArray = ArrayDataUtils.toObjectArray(
+                ArrayDataUtils.readArrayData(valuesNode.asArray()));
+        boolean[] maskArray = ArrayDataUtils.convertToBooleanArray(
+                ArrayDataUtils.readArrayData(maskNode.asArray()));
 
-    private Object[] handleNullableData(Group dataGroup) {
-        Dataset values = (Dataset) dataGroup.getChild("values");
-        Dataset mask = (Dataset) dataGroup.getChild("mask");
-        
-        Object[] valuesArray = convertDatasetToObjectArray(values);
-        boolean[] maskArray = convertToBooleanArray(mask.getData());
-        
-        // Apply mask: where mask is true, the value is null/NA
         Object[] result = new Object[valuesArray.length];
         for (int i = 0; i < valuesArray.length; i++) {
             result[i] = maskArray[i] ? null : valuesArray[i];
@@ -119,90 +69,10 @@ public class DataFrameColumn {
         return result;
     }
 
-    private boolean[] convertToBooleanArray(Object data) {
-        if (data instanceof boolean[]) {
-            return (boolean[]) data;
-        } else if (data instanceof byte[]) {
-            // HDF5 often stores booleans as bytes (0 = false, non-zero = true)
-            byte[] arr = (byte[]) data;
-            boolean[] result = new boolean[arr.length];
-            for (int i = 0; i < arr.length; i++) {
-                result[i] = arr[i] != 0;
-            }
-            return result;
-        } else if (data instanceof int[]) {
-            int[] arr = (int[]) data;
-            boolean[] result = new boolean[arr.length];
-            for (int i = 0; i < arr.length; i++) {
-                result[i] = arr[i] != 0;
-            }
-            return result;
-        } else if (data instanceof String[]) {
-            // jhdf might decode enum booleans as strings like "TRUE"/"FALSE"
-            String[] arr = (String[]) data;
-            boolean[] result = new boolean[arr.length];
-            for (int i = 0; i < arr.length; i++) {
-                result[i] = "TRUE".equalsIgnoreCase(arr[i]) || "1".equals(arr[i]);
-            }
-            return result;
-        } else {
-            throw new IllegalArgumentException("Unsupported mask type: " + data.getClass());
-        }
-    }
-
-    private int[] convertToIntArray(Object codesData) {
-        if (codesData instanceof byte[]) {
-            byte[] arr = (byte[]) codesData;
-            int[] result = new int[arr.length];
-            for (int i = 0; i < arr.length; i++) {
-                // Keep signed interpretation: -1 means NA in pandas categoricals
-                result[i] = arr[i];
-            }
-            return result;
-        } else if (codesData instanceof short[]) {
-            short[] arr = (short[]) codesData;
-            int[] result = new int[arr.length];
-            for (int i = 0; i < arr.length; i++) {
-                result[i] = arr[i];
-            }
-            return result;
-        } else if (codesData instanceof int[]) {
-            return (int[]) codesData;
-        } else if (codesData instanceof long[]) {
-            long[] arr = (long[]) codesData;
-            int[] result = new int[arr.length];
-            for (int i = 0; i < arr.length; i++) {
-                result[i] = (int) arr[i];
-            }
-            return result;
-        } else {
-            throw new IllegalArgumentException("Unsupported codes type: " + codesData.getClass());
-        }
-    }
-
-    private Object[] decodeCategoriesInt(Object[] categories, int[] codes) {
-        return IntStream.range(0, codes.length)
-                .mapToObj(i -> {
-                    int code = codes[i];
-                    // Handle -1 as NA/null for categoricals
-                    if (code < 0) {
-                        return null;
-                    }
-                    // Bounds check for safety
-                    if (code >= categories.length) {
-                        throw new IllegalArgumentException(
-                            "Invalid category code " + code + " at index " + i + 
-                            " (max valid code: " + (categories.length - 1) + ")");
-                    }
-                    return categories[code];
-                })
-                .toArray();
-    }
-
     /**
      * Get unique values in the column.
      * Similar to pandas Series.unique()
-     * 
+     *
      * @return Set of unique values
      */
     public Set<Object> unique() {
@@ -221,7 +91,7 @@ public class DataFrameColumn {
     /**
      * Get the number of unique values in the column.
      * Similar to pandas Series.nunique()
-     * 
+     *
      * @return Number of unique values
      */
     public int n_unique() {

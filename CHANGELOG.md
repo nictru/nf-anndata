@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Zarr backend support** — load local `.zarr` AnnData stores in addition to `.h5ad` files; backend is selected automatically from the path
+- **Backend-neutral store layer** — `AnnDataStore` / `StoreGroup` / `StoreArray` abstractions isolate HDF5 and Zarr I/O from plugin logic
+- **h5ad/zarr parity tests** — paired fixtures and cross-backend assertions for structure, indices, and metadata
+
 ## [0.4.1] - 2026-03-16
 
 ### Added
