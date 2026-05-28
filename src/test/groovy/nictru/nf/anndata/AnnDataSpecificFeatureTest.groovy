@@ -398,6 +398,24 @@ class AnnDataSpecificFeatureTest extends AnnDataTestBase {
         closeAnnData(ad)
     }
 
+    def 'should produce correct yaml representation for zarr store'() {
+        given:
+        def ad = new AnnData(findFixture('pbmc3k_processed', 'zarr'))
+
+        when:
+        def yaml = ad.yaml
+
+        then:
+        yaml.n_obs == 2638
+        yaml.n_vars == 1838
+        yaml.obs.index == '_index'
+        yaml.layers.contains('counts')
+        yaml.obsm.contains('X_pca')
+
+        cleanup:
+        closeAnnData(ad)
+    }
+
     def 'should produce correct yaml representation'() {
         given:
         def ad = new AnnData(findTestFile('pbmc3k_processed.h5ad'))

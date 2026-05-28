@@ -6,10 +6,7 @@ import nictru.nf.anndata.AnnData
 import nictru.nf.anndata.AnnDataTestBase
 
 /**
- * Integration tests for AnnDataExtension using real h5ad files
- * 
- * These tests require the test h5ad file from src/test/data/test_cases/
- * Tests will fail if the file is not available
+ * Integration tests for AnnDataExtension using real AnnData fixtures
  */
 class AnnDataExtensionIntegrationTest extends AnnDataTestBase {
 
@@ -70,5 +67,40 @@ class AnnDataExtensionIntegrationTest extends AnnDataTestBase {
         ad1?.close()
         ad2?.close()
     }
-}
 
+    def 'should load zarr store from String path'() {
+        given:
+        def extension = new AnnDataExtension()
+        extension.init(Mock(Session))
+        def testFile = findFixture('full_featured', 'zarr')
+
+        when:
+        def ad = extension.anndata(testFile.toString())
+
+        then:
+        ad != null
+        ad.n_obs > 0
+        ad.n_vars > 0
+
+        cleanup:
+        ad?.close()
+    }
+
+    def 'should load zarr store from Path object'() {
+        given:
+        def extension = new AnnDataExtension()
+        extension.init(Mock(Session))
+        def testFile = findFixture('pbmc3k_processed', 'zarr')
+
+        when:
+        def ad = extension.anndata(testFile)
+
+        then:
+        ad != null
+        ad.n_obs == 2638
+        ad.n_vars == 1838
+
+        cleanup:
+        ad?.close()
+    }
+}
