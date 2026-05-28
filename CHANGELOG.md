@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-05-28
+
 ### Added
 
 - **Zarr backend support** — load local `.zarr` AnnData stores in addition to `.h5ad` files; backend is selected automatically from the path
@@ -174,6 +176,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Column unique values with `n_unique()`
 - Nextflow plugin integration with `anndata()` function
 
+[0.5.0]: https://github.com/nictru/nf-anndata/compare/v0.4.1...v0.5.0
 [0.4.1]: https://github.com/nictru/nf-anndata/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/nictru/nf-anndata/compare/v0.3.4...v0.4.0
 [0.3.4]: https://github.com/nictru/nf-anndata/compare/v0.3.3...v0.3.4
