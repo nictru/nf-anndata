@@ -13,8 +13,11 @@ repositories {
 }
 
 configurations {
-    // Exclude slf4j-api from runtime - Nextflow provides it
+    // Exclude libraries provided by Nextflow at runtime to avoid PF4J classloader conflicts
     runtimeClasspath.exclude group: 'org.slf4j', module: 'slf4j-api'
+    runtimeClasspath.exclude group: 'com.google.guava', module: 'guava'
+    runtimeClasspath.exclude group: 'com.google.guava', module: 'failureaccess'
+    runtimeClasspath.exclude group: 'com.google.guava', module: 'listenablefuture'
 }
 
 dependencies {
