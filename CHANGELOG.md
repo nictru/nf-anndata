@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.1] - 2026-06-02
+
+### Added
+
+- **End-to-end remote staging test** — `AnnDataPluginRemoteTest` installs the plugin and runs Nextflow with a remote h5ad URL to catch PF4J/Guava classloader conflicts that Gradle unit tests miss
+
+### Fixed
+
+- **Remote h5ad staging classloader conflict** — exclude Guava from the plugin bundle so `CacheHelper.hasher()` uses Nextflow's classpath instead of triggering a PF4J `LinkageError` when staging remote files
+
 ## [0.5.0] - 2026-05-28
 
 ### Added
@@ -176,6 +186,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Column unique values with `n_unique()`
 - Nextflow plugin integration with `anndata()` function
 
+[0.5.1]: https://github.com/nictru/nf-anndata/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/nictru/nf-anndata/compare/v0.4.1...v0.5.0
 [0.4.1]: https://github.com/nictru/nf-anndata/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/nictru/nf-anndata/compare/v0.3.4...v0.4.0

@@ -67,15 +67,15 @@ jobs:
           architecture: x64
           distribution: 'temurin'
 
-      - name: Run tests
-        run: make test
-        env:
-          GRADLE_OPTS: '-Dorg.gradle.daemon=false'
-
       - name: Setup Nextflow ${{ inputs.nextflow_version }}
         uses: nf-core/setup-nextflow@v2
         with:
           version: ${{ inputs.nextflow_version }}
+
+      - name: Run tests
+        run: make test
+        env:
+          GRADLE_OPTS: '-Dorg.gradle.daemon=false'
 
       - name: Clean existing plugin
         run: rm -rf ~/.nextflow/plugins/nf-anndata*

@@ -2,7 +2,7 @@ plugins {
     id 'io.nextflow.nextflow-plugin' version '1.0.0-beta.10'
 }
 
-version = '0.5.0'
+version = '0.5.1'
 
 repositories {
     mavenCentral()
@@ -13,8 +13,11 @@ repositories {
 }
 
 configurations {
-    // Exclude slf4j-api from runtime - Nextflow provides it
+    // Exclude libraries provided by Nextflow at runtime to avoid PF4J classloader conflicts
     runtimeClasspath.exclude group: 'org.slf4j', module: 'slf4j-api'
+    runtimeClasspath.exclude group: 'com.google.guava', module: 'guava'
+    runtimeClasspath.exclude group: 'com.google.guava', module: 'failureaccess'
+    runtimeClasspath.exclude group: 'com.google.guava', module: 'listenablefuture'
 }
 
 dependencies {
