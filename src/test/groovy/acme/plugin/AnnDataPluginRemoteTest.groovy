@@ -63,11 +63,24 @@ class AnnDataPluginRemoteTest extends Specification {
         if (fromEnv) {
             return fromEnv
         }
-        for (def candidate : ['nextflow', '/usr/local/bin/nextflow', "${System.getProperty('user.home')}/.micromamba/envs/nf-core/bin/nextflow"]) {
+
+        def pathEnv = System.getenv('PATH') ?: ''
+        for (def dir : pathEnv.split(':')) {
+            if (!dir) {
+                continue
+            }
+            def candidate = Paths.get(dir, 'nextflow')
+            if (Files.isExecutable(candidate)) {
+                return candidate.toString()
+            }
+        }
+
+        for (def candidate : ['/usr/local/bin/nextflow', "${System.getProperty('user.home')}/.micromamba/envs/nf-core/bin/nextflow"]) {
             if (Files.isExecutable(Paths.get(candidate))) {
                 return candidate
             }
         }
+
         return null
     }
 
