@@ -201,4 +201,39 @@ public final class ArrayDataUtils {
                 })
                 .toArray();
     }
+
+    /**
+     * Decode a nullable array group ({@code values} + {@code mask}) into an Object[].
+     * Masked entries become {@code null}. Used for nullable-integer, nullable-boolean,
+     * and nullable-string-array encodings.
+     */
+    public static Object[] decodeNullableGroup(StoreGroup dataGroup) {
+        StoreNode valuesNode = dataGroup.getChild("values");
+        StoreNode maskNode = dataGroup.getChild("mask");
+        if (valuesNode == null || maskNode == null || !valuesNode.isArray() || !maskNode.isArray()) {
+            throw new IllegalArgumentException("Invalid nullable column in group: " + dataGroup.getName());
+        }
+
+        Object[] valuesArray = toObjectArray(readArrayData(valuesNode.asArray()));
+        boolean[] maskArray = convertToBooleanArray(readArrayData(maskNode.asArray()));
+
+        Object[] result = new Object[valuesArray.length];
+        for (int i = 0; i < valuesArray.length; i++) {
+            result[i] = maskArray[i] ? null : valuesArray[i];
+        }
+        return result;
+    }
+
+    /**
+     * Decode a nullable-string-array index group into String[] row names.
+     * Masked entries become empty strings (same convention as missing categorical codes).
+     */
+    public static String[] decodeNullableStringIndex(StoreGroup indexGroup) {
+        Object[] decoded = decodeNullableGroup(indexGroup);
+        String[] result = new String[decoded.length];
+        for (int i = 0; i < decoded.length; i++) {
+            result[i] = decoded[i] != null ? decoded[i].toString() : "";
+        }
+        return result;
+    }
 }

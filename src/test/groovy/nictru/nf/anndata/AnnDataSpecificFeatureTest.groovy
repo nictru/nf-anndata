@@ -381,6 +381,52 @@ class AnnDataSpecificFeatureTest extends AnnDataTestBase {
         closeAnnData(ad)
     }
 
+    def 'should handle nullable-string-array index and columns (#backend)'() {
+        given:
+        def ad = new AnnData(findFixture('dtypes_nullable_string', backend))
+
+        when:
+        def nullableStr = ad.obs.get('nullable_str')
+        def sampleId = ad.obs.get('sample_id')
+
+        then:
+        ad.n_obs == 20
+        ad.n_vars == 10
+        // Index stored as nullable-string-array (values + mask)
+        ad.obs_names != null
+        ad.obs_names.length == 20
+        ad.obs_names[0] == 'cell_0'
+        ad.obs_names[19] == 'cell_19'
+        ad.var_names != null
+        ad.var_names.length == 10
+        ad.var_names[0] == 'gene_0'
+        ad.var_names[9] == 'gene_9'
+
+        'nullable_str' in ad.obs.colnames
+        'sample_id' in ad.obs.colnames
+
+        nullableStr.data != null
+        nullableStr.data.length == 20
+        nullableStr.data.any { it == null }
+        nullableStr.data.any { it != null }
+        nullableStr.data[0] == null          // i % 3 == 0
+        nullableStr.data[1] == 'label_1'
+        nullableStr.data[3] == null
+
+        sampleId.data != null
+        sampleId.data.length == 20
+        sampleId.data.every { it != null }
+        sampleId.data[0] == 'sample_0'
+        sampleId.data[19] == 'sample_19'
+        sampleId.n_unique() == 20
+
+        cleanup:
+        closeAnnData(ad)
+
+        where:
+        backend << ['h5ad', 'zarr']
+    }
+
     def 'should load R-generated file with byte-string indices (test_decontx.h5ad)'() {
         given:
         def ad = new AnnData(Paths.get('src/test/data/test_decontx.h5ad'))

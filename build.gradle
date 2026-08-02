@@ -2,7 +2,7 @@ plugins {
     id 'io.nextflow.nextflow-plugin' version '1.0.0-beta.10'
 }
 
-version = '0.5.1'
+version = '0.5.2'
 
 repositories {
     mavenCentral()
@@ -22,7 +22,7 @@ configurations {
 
 dependencies {
     implementation 'io.jhdf:jhdf'
-    implementation 'dev.zarr:zarr-java:0.1.4-SNAPSHOT'
+    implementation 'dev.zarr:zarr-java:0.2.1-SNAPSHOT'
     // SLF4J is provided by Nextflow at runtime
     compileOnly 'org.slf4j:slf4j-api:2.0.17'
 }

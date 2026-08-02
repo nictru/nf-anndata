@@ -21,9 +21,10 @@ The backend is selected automatically from the path extension (`.h5ad` file or `
         - Get unique index values (`index.unique()`)
         - Get number of unique index values (`index.n_unique()`)
         - Check if value exists (`index.contains(value)`)
+        - Supports string, categorical, and nullable-string-array (`values` + `mask`) index encodings
     - Get unique values per column (`column.unique()`)
     - Get number of unique values per column (`column.n_unique()`)
-    - Access column data (`get(columnName)`)
+    - Access column data (`get(columnName)`) — including nullable integer/boolean/string columns
 - Get names of available fields in `layers`, `obsm`, `varm`, `obsp`, `varp`, `uns`
 
 ## Installation
@@ -289,7 +290,7 @@ To build the plugin:
 make assemble
 ```
 
-The Zarr backend uses a patched copy of [zarr-java](deps/zarr-java) wired in via Gradle composite build (`includeBuild 'deps/zarr-java'`). After changing the submodule, run `./gradlew test` from the repository root; Gradle builds the local `dev.zarr:zarr-java:0.1.4-SNAPSHOT` artifact automatically.
+The Zarr backend uses a patched copy of [zarr-java](deps/zarr-java) wired in via Gradle composite build (`includeBuild 'deps/zarr-java'`). After changing the submodule, run `./gradlew test` from the repository root; Gradle builds the local `dev.zarr:zarr-java:0.2.1-SNAPSHOT` artifact automatically.
 
 To run zarr-java tests directly:
 

@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.2] - 2026-08-02
+
+### Changed
+
+- **Upgraded jhdf** — bump the patched `deps/jhdf` fork to upstream v0.13.0 while keeping the empty shuffle `filterData` / chunked-dataset fixes for R-generated h5ad files
+- **Upgraded zarr-java** — bump the patched `deps/zarr-java` fork to upstream 0.2.0 (local artifact `0.2.1-SNAPSHOT`) while keeping v2 vlen-utf8 support for AnnData string arrays
+
+### Fixed
+
+- **Nullable string arrays (anndata 0.13)** — `obs`/`var` indices and columns encoded as `nullable-string-array` (`values` + `mask`) are now decoded correctly instead of being misread as categorical groups. This restores compatibility with files written under anndata 0.13 / pandas nullable strings.
+
 ## [0.5.1] - 2026-06-02
 
 ### Added
@@ -186,6 +197,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Column unique values with `n_unique()`
 - Nextflow plugin integration with `anndata()` function
 
+[0.5.2]: https://github.com/nictru/nf-anndata/compare/v0.5.1...v0.5.2
 [0.5.1]: https://github.com/nictru/nf-anndata/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/nictru/nf-anndata/compare/v0.4.1...v0.5.0
 [0.4.1]: https://github.com/nictru/nf-anndata/compare/v0.4.0...v0.4.1

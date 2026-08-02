@@ -59,7 +59,7 @@ public class DataFrame {
         }
 
         if (child.isGroup()) {
-            return decodeCategoricalIndex(child.asGroup());
+            return decodeGroupIndex(child.asGroup());
         }
 
         StoreArray index = child.asArray();
@@ -73,6 +73,17 @@ public class DataFrame {
             return new String[0];
         }
         return ArrayDataUtils.toStringArrayFromData(data);
+    }
+
+    private String[] decodeGroupIndex(StoreGroup indexGroup) {
+        if (indexGroup.getChild("categories") != null && indexGroup.getChild("codes") != null) {
+            return decodeCategoricalIndex(indexGroup);
+        }
+        if (indexGroup.getChild("values") != null && indexGroup.getChild("mask") != null) {
+            return ArrayDataUtils.decodeNullableStringIndex(indexGroup);
+        }
+        throw new IllegalArgumentException(
+                "Unknown index group structure with keys: " + indexGroup.getChildKeys());
     }
 
     private String[] decodeCategoricalIndex(StoreGroup indexGroup) {

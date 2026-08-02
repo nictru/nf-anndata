@@ -51,22 +51,7 @@ public class DataFrameColumn {
     }
 
     private Object[] handleNullableData(StoreGroup dataGroup) {
-        StoreNode valuesNode = dataGroup.getChild("values");
-        StoreNode maskNode = dataGroup.getChild("mask");
-        if (valuesNode == null || maskNode == null || !valuesNode.isArray() || !maskNode.isArray()) {
-            throw new IllegalArgumentException("Invalid nullable column in group: " + dataGroup.getName());
-        }
-
-        Object[] valuesArray = ArrayDataUtils.toObjectArray(
-                ArrayDataUtils.readArrayData(valuesNode.asArray()));
-        boolean[] maskArray = ArrayDataUtils.convertToBooleanArray(
-                ArrayDataUtils.readArrayData(maskNode.asArray()));
-
-        Object[] result = new Object[valuesArray.length];
-        for (int i = 0; i < valuesArray.length; i++) {
-            result[i] = maskArray[i] ? null : valuesArray[i];
-        }
-        return result;
+        return ArrayDataUtils.decodeNullableGroup(dataGroup);
     }
 
     /**
