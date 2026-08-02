@@ -3,4 +3,4 @@
 	url = git@github.com:nictru/jhdf.git
 [submodule "deps/zarr-java"]
 	path = deps/zarr-java
-	url = git@github.com:zarr-developers/zarr-java.git
+	url = git@github.com:nictru/zarr-java.git
