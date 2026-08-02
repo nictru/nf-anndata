@@ -240,6 +240,89 @@ def generate_dtypes_string():
     write_adata(adata, "dtypes_string")
 
 
+def generate_dtypes_nullable_string():
+    """Generate h5ad/zarr using anndata 0.13-style nullable-string-array encoding.
+
+    With ``pd.options.future.infer_string`` and
+    ``anndata.settings.allow_write_nullable_strings`` enabled, string indices
+    (and pandas StringArray columns) are written as groups with
+    ``encoding-type: nullable-string-array`` (``values`` + ``mask``) instead of
+    flat ``string-array`` datasets. AnnData's dataframe writer may still coerce
+    string columns to categoricals, so nullable string columns are written via
+    ``write_elem`` after the initial store is created.
+    """
+    from anndata.io import write_elem
+    import h5py
+    import zarr
+
+    prev_infer = getattr(pd.options.future, "infer_string", False)
+    prev_allow = ad.settings.allow_write_nullable_strings
+    try:
+        pd.options.future.infer_string = True
+        ad.settings.allow_write_nullable_strings = True
+
+        obs_names = [f"cell_{i}" for i in range(N_OBS)]
+        var_names = [f"gene_{i}" for i in range(N_VARS)]
+
+        # Placeholders; overwritten below with true nullable-string-array columns.
+        obs = pd.DataFrame(
+            {
+                "nullable_str": [f"label_{i}" for i in range(N_OBS)],
+                "sample_id": [f"sample_{i}" for i in range(N_OBS)],
+            },
+            index=obs_names,
+        )
+        var = pd.DataFrame(index=var_names)
+
+        adata = ad.AnnData(
+            X=rng.random((N_OBS, N_VARS), dtype=np.float32),
+            obs=obs,
+            var=var,
+        )
+        adata.obs.index.name = None
+        adata.var.index.name = None
+
+        write_adata(adata, "dtypes_nullable_string")
+
+        nullable_vals = [
+            pd.NA if i % 3 == 0 else f"label_{i}" for i in range(N_OBS)
+        ]
+        nullable_str = pd.array(nullable_vals, dtype=pd.StringDtype())
+        sample_id = pd.array(
+            [f"sample_{i}" for i in range(N_OBS)], dtype=pd.StringDtype()
+        )
+
+        h5ad_path = output_dir / "dtypes_nullable_string.h5ad"
+        with h5py.File(h5ad_path, "a") as f:
+            if "obs/nullable_str" in f:
+                del f["obs/nullable_str"]
+            if "obs/sample_id" in f:
+                del f["obs/sample_id"]
+            write_elem(f["obs"], "nullable_str", nullable_str)
+            write_elem(f["obs"], "sample_id", sample_id)
+            f["obs"].attrs["column-order"] = np.array(
+                ["nullable_str", "sample_id"], dtype=object
+            )
+
+        zarr_path = output_dir / "dtypes_nullable_string.zarr"
+        # Consolidated metadata blocks in-place edits; drop it before rewriting columns.
+        for meta_name in (".zmetadata", "zarr.json"):
+            meta_path = zarr_path / meta_name
+            if meta_path.exists():
+                meta_path.unlink()
+        root = zarr.open_group(str(zarr_path), mode="a")
+        obs_group = root["obs"]
+        for key in ("nullable_str", "sample_id"):
+            if key in obs_group:
+                del obs_group[key]
+        write_elem(obs_group, "nullable_str", nullable_str)
+        write_elem(obs_group, "sample_id", sample_id)
+        obs_group.attrs["column-order"] = ["nullable_str", "sample_id"]
+    finally:
+        pd.options.future.infer_string = prev_infer
+        ad.settings.allow_write_nullable_strings = prev_allow
+
+
 def generate_x_dense_float32():
     """Generate h5ad with dense float32 X matrix."""
     obs_names = [f"cell_{i}" for i in range(N_OBS)]
@@ -759,6 +842,7 @@ if __name__ == "__main__":
         ("dtypes_boolean", generate_dtypes_boolean),
         ("dtypes_nullable", generate_dtypes_nullable),
         ("dtypes_string", generate_dtypes_string),
+        ("dtypes_nullable_string", generate_dtypes_nullable_string),
         ("x_dense_float32", generate_x_dense_float32),
         ("x_dense_float64", generate_x_dense_float64),
         ("x_sparse_csr", generate_x_sparse_csr),

@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Nullable string arrays (anndata 0.13)** — `obs`/`var` indices and columns encoded as `nullable-string-array` (`values` + `mask`) are now decoded correctly instead of being misread as categorical groups. This restores compatibility with files written under anndata 0.13 / pandas nullable strings.
+
 ## [0.5.1] - 2026-06-02
 
 ### Added

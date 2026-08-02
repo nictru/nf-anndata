@@ -6,3 +6,8 @@
 # Ignore Gradle build output directory
 build
 work
+
+# Python artifacts from fixture generation
+__pycache__/
+*.py[cod]
+.DS_Store

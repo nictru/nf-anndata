@@ -12,6 +12,7 @@ class AnnDataBackendParityTest extends AnnDataTestBase {
         'dtypes_categorical',
         'dtypes_numeric',
         'dtypes_nullable',
+        'dtypes_nullable_string',
         'index_categorical',
         'layers_mixed',
         'obsm_dense',
