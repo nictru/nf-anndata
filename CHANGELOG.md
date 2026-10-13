@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.3] - 2026-10-13
+
 ### Added
 
 - **Zarr v3 read support** — local `.zarr` AnnData stores written in Zarr format v3 (e.g. anndata with `zarr_write_format=3`) can now be read; v3 nodes are recognised via `zarr.json`
@@ -212,6 +214,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Column unique values with `n_unique()`
 - Nextflow plugin integration with `anndata()` function
 
+[0.5.3]: https://github.com/nictru/nf-anndata/compare/v0.5.2...v0.5.3
 [0.5.2]: https://github.com/nictru/nf-anndata/compare/v0.5.1...v0.5.2
 [0.5.1]: https://github.com/nictru/nf-anndata/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/nictru/nf-anndata/compare/v0.4.1...v0.5.0
