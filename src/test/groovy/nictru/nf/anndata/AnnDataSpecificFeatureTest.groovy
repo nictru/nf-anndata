@@ -424,7 +424,7 @@ class AnnDataSpecificFeatureTest extends AnnDataTestBase {
         closeAnnData(ad)
 
         where:
-        backend << ['h5ad', 'zarr']
+        backend << ['h5ad', 'zarr', 'zarr3']
     }
 
     def 'should load R-generated file with byte-string indices (test_decontx.h5ad)'() {
