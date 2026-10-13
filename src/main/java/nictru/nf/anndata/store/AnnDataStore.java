@@ -30,7 +30,9 @@ public interface AnnDataStore extends AutoCloseable {
         if (name.endsWith(".h5ad")) {
             return new H5adAnnDataStore(path);
         }
-        if (name.endsWith(".zarr") || Files.isDirectory(path.resolve(".zgroup"))) {
+        if (name.endsWith(".zarr")
+                || Files.isRegularFile(path.resolve(".zgroup"))
+                || Files.isRegularFile(path.resolve("zarr.json"))) {
             return new ZarrAnnDataStore(path);
         }
 

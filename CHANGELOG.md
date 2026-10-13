@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Zarr v3 read support** — local `.zarr` AnnData stores written in Zarr format v3 (e.g. anndata with `zarr_write_format=3`) can now be read; v3 nodes are recognised via `zarr.json`
+- **Zarr v3 strings in patched zarr-java** — v3 `string` data type and `vlen-utf8` array-to-bytes codec added to `deps/zarr-java`
+- **`.v3.zarr` fixtures and parity tests** — every test case now also has a Zarr v3 fixture (`*.v3.zarr`); the per-fixture tests run on a new `zarr3` backend and an h5ad vs Zarr v3 parity test was added
+
+### Changed
+
+- **Upgraded zarr-java to 0.3.1** — merge upstream zarr-java 0.3.1 into the patched `deps/zarr-java` fork (local artifact `0.3.2-SNAPSHOT`) while keeping vlen-utf8 support for AnnData string arrays
+
+### Fixed
+
+- **Zarr directory detection** — `AnnDataStore.open` now checks `.zgroup` as a regular file (it previously used `Files.isDirectory`) and also accepts `zarr.json`
+- **Multi-chunk vlen-utf8 strings** — fixed reading and writing of string arrays spanning multiple chunks in the patched zarr-java
+
 ## [0.5.2] - 2026-08-02
 
 ### Changed
