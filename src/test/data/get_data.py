@@ -24,7 +24,7 @@ output_dir.mkdir(exist_ok=True)
 
 
 def write_adata(adata, name: str, *, compression=None, compression_opts=None):
-    """Write AnnData to both h5ad and zarr formats."""
+    """Write AnnData as h5ad, Zarr v2 (``{name}.zarr``) and Zarr v3 (``{name}.v3.zarr``)."""
     h5ad_kwargs = {}
     if compression is not None:
         h5ad_kwargs["compression"] = compression
@@ -33,10 +33,12 @@ def write_adata(adata, name: str, *, compression=None, compression_opts=None):
 
     adata.write_h5ad(output_dir / f"{name}.h5ad", **h5ad_kwargs)
 
-    zarr_path = output_dir / f"{name}.zarr"
-    if zarr_path.exists():
-        shutil.rmtree(zarr_path)
-    adata.write_zarr(zarr_path)
+    for zarr_format, suffix in ((2, ".zarr"), (3, ".v3.zarr")):
+        zarr_path = output_dir / f"{name}{suffix}"
+        if zarr_path.exists():
+            shutil.rmtree(zarr_path)
+        with ad.settings.override(zarr_write_format=zarr_format):
+            adata.write_zarr(zarr_path)
 
 # Standard dimensions for test files
 N_OBS = 20
@@ -304,20 +306,26 @@ def generate_dtypes_nullable_string():
                 ["nullable_str", "sample_id"], dtype=object
             )
 
-        zarr_path = output_dir / "dtypes_nullable_string.zarr"
-        # Consolidated metadata blocks in-place edits; drop it before rewriting columns.
-        for meta_name in (".zmetadata", "zarr.json"):
-            meta_path = zarr_path / meta_name
-            if meta_path.exists():
-                meta_path.unlink()
-        root = zarr.open_group(str(zarr_path), mode="a")
-        obs_group = root["obs"]
-        for key in ("nullable_str", "sample_id"):
-            if key in obs_group:
-                del obs_group[key]
-        write_elem(obs_group, "nullable_str", nullable_str)
-        write_elem(obs_group, "sample_id", sample_id)
-        obs_group.attrs["column-order"] = ["nullable_str", "sample_id"]
+        for zarr_format, suffix in ((2, ".zarr"), (3, ".v3.zarr")):
+            zarr_path = output_dir / f"dtypes_nullable_string{suffix}"
+            # Consolidated metadata blocks in-place edits; drop it before rewriting columns.
+            if zarr_format == 2:
+                meta_path = zarr_path / ".zmetadata"
+                if meta_path.exists():
+                    meta_path.unlink()
+            with ad.settings.override(zarr_write_format=zarr_format):
+                root = zarr.open_group(
+                    str(zarr_path), mode="a", zarr_format=zarr_format, use_consolidated=False
+                )
+                obs_group = root["obs"]
+                for key in ("nullable_str", "sample_id"):
+                    if key in obs_group:
+                        del obs_group[key]
+                write_elem(obs_group, "nullable_str", nullable_str)
+                write_elem(obs_group, "sample_id", sample_id)
+                obs_group.attrs["column-order"] = ["nullable_str", "sample_id"]
+            if zarr_format == 3:
+                zarr.consolidate_metadata(str(zarr_path), zarr_format=3)
     finally:
         pd.options.future.infer_string = prev_infer
         ad.settings.allow_write_nullable_strings = prev_allow
@@ -831,7 +839,33 @@ def generate_pbmc3k():
         write_adata(adata, "pbmc3k_processed")
 
 
+def convert_h5ad_to_zarr_v3():
+    """Write ``{name}.v3.zarr`` for every existing ``{name}.h5ad`` without regenerating data.
+
+    The committed fixtures were generated with an earlier RNG sequence, so a
+    full regeneration changes their values. This mode keeps h5ad and v2 Zarr
+    fixtures untouched and derives v3 stores with identical content from them.
+    """
+    for h5ad_path in tqdm(sorted(output_dir.glob("*.h5ad")), desc="Converting to Zarr v3", unit="case"):
+        name = h5ad_path.stem
+        zarr_path = output_dir / f"{name}.v3.zarr"
+        if zarr_path.exists():
+            shutil.rmtree(zarr_path)
+        with ad.settings.override(
+            zarr_write_format=3,
+            allow_write_nullable_strings=name == "dtypes_nullable_string",
+        ), pd.option_context("future.infer_string", name == "dtypes_nullable_string"):
+            adata = ad.read_h5ad(h5ad_path)
+            adata.write_zarr(zarr_path, convert_strings_to_categoricals=False)
+
+
 if __name__ == "__main__":
+    import sys
+
+    if "--v3-from-h5ad" in sys.argv:
+        convert_h5ad_to_zarr_v3()
+        sys.exit(0)
+
     # List of all generation functions with their display names
     test_generators = [
         ("index_unnamed", generate_index_unnamed),
@@ -879,4 +913,4 @@ if __name__ == "__main__":
     n_cases = len(test_generators) + 1
     tqdm.write("\n" + "=" * 60)
     tqdm.write(f"All test files generated in '{output_dir}/' directory")
-    tqdm.write(f"Total cases: {n_cases} ({len(test_generators)} test cases + 1 pbmc3k), each as .h5ad and .zarr")
+    tqdm.write(f"Total cases: {n_cases} ({len(test_generators)} test cases + 1 pbmc3k), each as .h5ad, .zarr (v2) and .v3.zarr")
