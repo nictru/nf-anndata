@@ -1,0 +1,70 @@
+{
+  "shape": [
+    5
+  ],
+  "data_type": {
+    "name": "struct",
+    "configuration": {
+      "fields": [
+        {
+          "name": "name",
+          "data_type": {
+            "name": "fixed_length_utf32",
+            "configuration": {
+              "length_bytes": 24
+            }
+          }
+        },
+        {
+          "name": "value",
+          "data_type": "float32"
+        },
+        {
+          "name": "count",
+          "data_type": "int32"
+        }
+      ]
+    }
+  },
+  "chunk_grid": {
+    "name": "regular",
+    "configuration": {
+      "chunk_shape": [
+        5
+      ]
+    }
+  },
+  "chunk_key_encoding": {
+    "name": "default",
+    "configuration": {
+      "separator": "/"
+    }
+  },
+  "fill_value": {
+    "name": "0",
+    "value": 0.0,
+    "count": 0
+  },
+  "codecs": [
+    {
+      "name": "bytes",
+      "configuration": {
+        "endian": "little"
+      }
+    },
+    {
+      "name": "zstd",
+      "configuration": {
+        "level": 0,
+        "checksum": false
+      }
+    }
+  ],
+  "attributes": {
+    "encoding-type": "rec-array",
+    "encoding-version": "0.2.0"
+  },
+  "zarr_format": 3,
+  "node_type": "array",
+  "storage_transformers": []
+}

@@ -56,6 +56,14 @@ abstract class AnnDataTestBase extends Specification {
                     path    : zarrPath,
                 ]
             }
+            def zarr3Path = TEST_DATA_DIR.resolve("${caseName}.v3.zarr")
+            if (Files.exists(zarr3Path)) {
+                fixtures << [
+                    caseName: caseName,
+                    backend : 'zarr3',
+                    path    : zarr3Path,
+                ]
+            }
         }
         return fixtures
     }
@@ -82,7 +90,10 @@ abstract class AnnDataTestBase extends Specification {
      * Find a test fixture by case name and backend.
      */
     protected Path findFixture(String caseName, String backend) {
-        def suffix = backend == 'zarr' ? '.zarr' : '.h5ad'
+        def suffix = [h5ad: '.h5ad', zarr: '.zarr', zarr3: '.v3.zarr'][backend]
+        if (suffix == null) {
+            throw new IllegalArgumentException("Unknown backend: ${backend}")
+        }
         def file = TEST_DATA_DIR.resolve("${caseName}${suffix}")
         if (!Files.exists(file)) {
             throw new FileNotFoundException("Test fixture not found: ${file.toAbsolutePath()}")

@@ -1,15 +1,15 @@
 # nf-anndata
 
-Nextflow plugin for reading and accessing properties from AnnData stores in `.h5ad` and `.zarr` formats.
+Nextflow plugin for reading and accessing properties from AnnData stores in `.h5ad` and `.zarr` formats (Zarr format v2 and v3).
 
 ## Supported formats
 
 | Format | Path | Notes |
 |--------|------|-------|
 | `.h5ad` | Single HDF5 file | Remote paths (S3, GCS, Azure, HTTP) are staged locally before reading |
-| `.zarr` | Local directory store | AnnData-on-Zarr v2 via patched [zarr-java](deps/zarr-java) (including vlen-utf8 string columns); remote Zarr stores are not supported yet |
+| `.zarr` | Local directory store | AnnData-on-Zarr v2 and v3 via patched [zarr-java](deps/zarr-java) (including vlen-utf8 string columns); remote Zarr stores are not supported yet |
 
-The backend is selected automatically from the path extension (`.h5ad` file or `.zarr` directory).
+The backend is selected automatically from the path extension (`.h5ad` file or `.zarr` directory; Zarr v2 and v3 are detected automatically).
 
 ## Features
 
@@ -210,7 +210,7 @@ then {
 Loads an AnnData object from a file or directory path.
 
 **Parameters:**
-- `path` - Path to a `.h5ad` file or local `.zarr` directory (String or Path)
+- `path` - Path to a `.h5ad` file or local `.zarr` directory in Zarr format v2 or v3 (String or Path)
 
 **Returns:** `AnnData` object
 
@@ -290,7 +290,7 @@ To build the plugin:
 make assemble
 ```
 
-The Zarr backend uses a patched copy of [zarr-java](deps/zarr-java) wired in via Gradle composite build (`includeBuild 'deps/zarr-java'`). After changing the submodule, run `./gradlew test` from the repository root; Gradle builds the local `dev.zarr:zarr-java:0.2.1-SNAPSHOT` artifact automatically.
+The Zarr backend uses a patched copy of [zarr-java](deps/zarr-java) wired in via Gradle composite build (`includeBuild 'deps/zarr-java'`). After changing the submodule, run `./gradlew test` from the repository root; Gradle builds the local `dev.zarr:zarr-java:0.3.2-SNAPSHOT` artifact automatically.
 
 To run zarr-java tests directly:
 

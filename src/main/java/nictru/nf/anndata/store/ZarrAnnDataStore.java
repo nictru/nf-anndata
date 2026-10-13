@@ -57,7 +57,8 @@ final class ZarrAnnDataStore implements AnnDataStore {
 
     private static boolean isZarrNode(StoreHandle nodeHandle) {
         return nodeHandle.resolve(dev.zarr.zarrjava.core.Node.ZGROUP).exists()
-                || nodeHandle.resolve(dev.zarr.zarrjava.core.Node.ZARRAY).exists();
+                || nodeHandle.resolve(dev.zarr.zarrjava.core.Node.ZARRAY).exists()
+                || nodeHandle.resolve(dev.zarr.zarrjava.core.Node.ZARR_JSON).exists();
     }
 
     static Object readGroupAttribute(dev.zarr.zarrjava.core.Group group, String name) {
