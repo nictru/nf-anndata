@@ -1,17 +1,28 @@
 package acme.plugin
 
+import java.nio.file.CopyOption
 import java.nio.file.Files
 import java.nio.file.FileSystems
 import java.nio.file.Path
 import java.nio.file.Paths
 import java.nio.file.spi.FileSystemProvider
+import java.util.concurrent.Callable
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.Executors
+import java.util.concurrent.FutureTask
+import java.util.concurrent.TimeoutException
 import nextflow.Global
 import nextflow.Session
+import nextflow.file.FileSystemTransferAware
 import nictru.nf.anndata.AnnData
 import spock.lang.Specification
 import spock.lang.TempDir
 import spock.lang.Requires
 import spock.lang.Timeout
+import spock.util.environment.RestoreSystemProperties
+
+import static java.util.concurrent.TimeUnit.MILLISECONDS
+import static java.util.concurrent.TimeUnit.SECONDS
 
 /**
  * Integration tests for AnnDataExtension with remote file staging
@@ -22,6 +33,7 @@ import spock.lang.Timeout
 class AnnDataExtensionRemoteTest extends Specification {
 
     static final String REMOTE_FILE_URL = 'https://github.com/nictru/nf-anndata/raw/refs/heads/main/src/test/data/test_cases/pbmc3k_processed.h5ad'
+    static final Path H5AD_FIXTURE = Path.of('src/test/data/test_cases/edge_minimal.h5ad')
 
     @TempDir
     Path tempDir
@@ -29,6 +41,84 @@ class AnnDataExtensionRemoteTest extends Specification {
     def cleanup() {
         // Reset global session after each test
         Global.session = null
+    }
+
+    @RestoreSystemProperties
+    def 'concurrent S3 readers only open the completed H5AD'() {
+        given:
+        System.setProperty('java.io.tmpdir', tempDir.toString())
+        def executor = Executors.newFixedThreadPool(2)
+        def partialWritten = new CountDownLatch(1)
+        def finishDownload = new CountDownLatch(1)
+        def secondStarted = new CountDownLatch(1)
+        def extension = new AnnDataExtension()
+        def fixtureBytes = Files.readAllBytes(H5AD_FIXTURE)
+        def remote = createMockRemotePath('s3', 'test.h5ad') { Path target ->
+            Files.newOutputStream(target).withCloseable { output ->
+                output.write(fixtureBytes, 0, 512)
+                partialWritten.countDown()
+                assert finishDownload.await(10, SECONDS)
+                output.write(fixtureBytes, 512, fixtureBytes.length - 512)
+            }
+        }
+        def first = new FutureTask<Integer>({ extension.anndata(remote).withCloseable { it.n_obs } } as Callable<Integer>)
+        def second = new FutureTask<Integer>({
+            secondStarted.countDown()
+            extension.anndata(remote).withCloseable { it.n_obs }
+        } as Callable<Integer>)
+
+        when:
+        executor.execute(first)
+        assert partialWritten.await(10, SECONDS)
+        executor.execute(second)
+        assert secondStarted.await(10, SECONDS)
+        second.get(250, MILLISECONDS)
+
+        then:
+        thrown(TimeoutException)
+        Files.walk(tempDir).withCloseable { paths -> paths.noneMatch { it.fileName.toString() == 'test.h5ad' } }
+
+        when:
+        finishDownload.countDown()
+
+        then:
+        first.get(10, SECONDS) == 20
+        second.get(10, SECONDS) == 20
+
+        cleanup:
+        finishDownload?.countDown()
+        executor?.shutdownNow()
+        executor?.awaitTermination(10, SECONDS)
+    }
+
+    @RestoreSystemProperties
+    def 'failed S3 downloads leave no cache file and can be retried'() {
+        given:
+        System.setProperty('java.io.tmpdir', tempDir.toString())
+        def extension = new AnnDataExtension()
+        def failDownload = true
+        def remote = createMockRemotePath('s3', 'test.h5ad') { Path target ->
+            if (failDownload) {
+                Files.write(target, new byte[8])
+                throw new IOException('Interrupted download')
+            }
+            Files.write(target, Files.readAllBytes(H5AD_FIXTURE))
+        }
+
+        when:
+        extension.anndata(remote).close()
+
+        then:
+        def error = thrown(IOException)
+        error.message == 'Interrupted download'
+        Files.walk(tempDir).withCloseable { paths -> paths.noneMatch { Files.isRegularFile(it) } }
+
+        when:
+        failDownload = false
+        def observations = extension.anndata(remote).withCloseable { it.n_obs }
+
+        then:
+        observations == 20
     }
 
     /**
@@ -220,22 +310,28 @@ class AnnDataExtensionRemoteTest extends Specification {
     /**
      * Create a mock Path that appears to be from a remote filesystem.
      */
-    private Path createMockRemotePath(String scheme, String fileName) {
+    private Path createMockRemotePath(String scheme, String fileName, Closure transfer = null) {
+        def remoteProvider = Mock(TransferProvider) {
+            getScheme() >> scheme
+            canDownload(_, _) >> (transfer != null)
+            download(_, _, _) >> { Path source, Path target, CopyOption[] options -> transfer.call(target) }
+        }
         def mockFileSystem = Mock(java.nio.file.FileSystem) {
-            provider() >> Mock(FileSystemProvider) {
-                getScheme() >> scheme
-            }
+            provider() >> remoteProvider
         }
         
         def mockPath = Mock(Path) {
             getFileSystem() >> mockFileSystem
             getFileName() >> Paths.get(fileName)
+            toAbsolutePath() >> Paths.get("/${fileName}")
             toUri() >> new URI("${scheme}://bucket/${fileName}")
             toString() >> "/${fileName}"
         }
         
         return mockPath
     }
+
+    private static abstract class TransferProvider extends FileSystemProvider implements FileSystemTransferAware {}
 
     /**
      * Test that remote HTTP files are automatically staged and can be read.

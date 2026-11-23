@@ -22,6 +22,7 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
 import java.nio.file.FileSystems
+import java.nio.file.StandardCopyOption
 import java.util.concurrent.ConcurrentHashMap
 import nextflow.Global
 import nextflow.Session
@@ -200,9 +201,14 @@ class AnnDataExtension extends PluginExtensionPoint {
             // Create parent directories
             Files.createDirectories(cacheDir)
             
-            // Use FilesEx.copyTo which leverages efficient provider-specific download
-            // For S3, this uses TransferManager which streams directly to disk
-            FilesEx.copyTo(path, cachedFile)
+            // Publish the cache entry only after the provider has finished writing it.
+            def downloadFile = Files.createTempFile(cacheDir, '.download-', '.tmp')
+            try {
+                FilesEx.copyTo(path, downloadFile)
+                Files.move(downloadFile, cachedFile, StandardCopyOption.ATOMIC_MOVE)
+            } finally {
+                Files.deleteIfExists(downloadFile)
+            }
             
             // Track for cleanup
             stagedFiles.add(cachedFile)
