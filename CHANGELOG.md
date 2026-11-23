@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Publish remote H5AD cache files only after the download completes, so concurrent readers cannot open a partial file and failed downloads can be retried.
+
 ## [0.5.3] - 2026-10-13
 
 ### Added
